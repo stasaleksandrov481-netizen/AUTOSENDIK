@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AutoSyndicate: Underground</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg-dark:#08080c; --panel:#13131a; --panel-2:#191922; --panel-border:#23232f;
+  --accent:#f43f5e; --accent-glow:rgba(244,63,94,.4);
+  --green:#10b981; --gold:#f59e0b; --blue:#38bdf8; --purple:#a78bfa;
+  --text-main:#f8fafc; --text-muted:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Roboto,sans-serif;user-select:none;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg-dark);color:var(--text-main);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+svg{display:block;}
+
+header{background:rgba(19,19,26,.95);backdrop-filter:blur(12px);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--panel-border);z-index:50;gap:8px;}
+.header-left{display:flex;align-items:center;gap:9px;min-width:0;}
+.avatar-mini{width:34px;height:34px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;cursor:pointer;overflow:hidden;border:1px solid rgba(255,255,255,.15);}
+.avatar-mini img{width:100%;height:100%;object-fit:cover;}
+.logo{font-weight:900;font-size:15px;letter-spacing:1px;text-transform:uppercase;font-style:italic;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.logo span{color:var(--accent);text-shadow:0 0 10px var(--accent-glow);}
+.header-stats{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.balance{background:#1a1a24;padding:6px 9px;border-radius:8px;font-weight:800;border:1px solid var(--panel-border);color:#fff;display:flex;align-items:center;gap:4px;font-size:12px;}
+.balance span{color:var(--gold);}
+.rep-badge{background:rgba(244,63,94,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 8px;border-radius:8px;font-size:10px;font-weight:900;white-space:nowrap;}
+
+main{flex:1;overflow-y:auto;padding:14px;padding-bottom:96px;}
+.screen{display:none;animation:fadeIn .2s ease;min-height:100%;flex-direction:column;align-items:center;}
+.screen.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+.section-title{width:100%;max-width:520px;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.list-container{width:100%;max-width:520px;display:flex;flex-direction:column;gap:11px;}
+.back-link{color:var(--text-muted);font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:10px;align-self:flex-start;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px;}
+
+/* xp bar */
+.xp-wrap{width:100%;max-width:520px;margin-bottom:12px;}
+.xp-top{display:flex;justify-content:space-between;font-size:10.5px;font-weight:800;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;}
+.xp-bar-bg{width:100%;height:8px;background:#08080c;border-radius:4px;overflow:hidden;border:1px solid var(--panel-border);}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));border-radius:4px;transition:width .3s;}
+
+/* car card */
+.car-card{background:var(--panel);border-radius:14px;overflow:hidden;border:1px solid var(--panel-border);box-shadow:0 8px 20px rgba(0,0,0,.45);width:100%;}
+.car-thumb{width:100%;height:140px;position:relative;background:#050508;flex-shrink:0;cursor:pointer;}
+.car-thumb svg{width:100%;height:100%;}
+.tier-badge{position:absolute;top:9px;left:9px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:900;text-transform:uppercase;background:rgba(0,0,0,.82);border:1px solid rgba(255,255,255,.15);z-index:2;}
+.power-badge{position:absolute;top:9px;right:9px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:900;background:rgba(244,63,94,.9);color:#fff;z-index:2;}
+.boss-badge{position:absolute;bottom:9px;left:9px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:900;background:var(--gold);color:#241a00;z-index:2;text-transform:uppercase;}
+.car-info-box{padding:11px 14px;}
+.car-title{font-size:16px;font-weight:900;margin-bottom:2px;}
+.car-stats{display:flex;gap:10px;font-size:11.5px;color:var(--text-muted);margin:4px 0 10px;font-weight:600;flex-wrap:wrap;}
+.car-stats span{color:#fff;}
+
+.btn{width:100%;padding:11px;border-radius:8px;border:none;font-weight:800;font-size:12.5px;text-transform:uppercase;cursor:pointer;letter-spacing:.4px;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.5;}
+.btn-buy{background:#fff;color:#000;}
+.btn-buy:disabled{background:#1e1e2d;color:var(--text-muted);}
+.btn-select{background:var(--accent);color:#fff;box-shadow:0 0 12px var(--accent-glow);}
+.selected-mark{background:var(--green) !important;color:#fff !important;}
+.btn-ghost{background:var(--panel-2);color:#fff;border:1px solid var(--panel-border);}
+.btn-gold{background:var(--gold);color:#241a00;}
+.btn-green{background:var(--green);color:#04231a;}
+.btn-row{display:flex;gap:7px;}
+
+/* car detail */
+.detail-hero{width:100%;height:190px;border-radius:16px;position:relative;margin-bottom:14px;border:1px solid var(--panel-border);overflow:hidden;}
+.detail-hero svg{width:100%;height:100%;}
+.detail-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(8,8,12,.9) 100%);}
+.detail-hero-text{position:absolute;bottom:12px;left:14px;right:14px;z-index:2;}
+.detail-hero-text h2{font-size:22px;font-weight:900;}
+.stat-row{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+.stat-line{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-muted);padding:5px 0;font-weight:700;}
+.stat-line b{color:#fff;}
+.stat-bar-bg{width:100%;height:8px;background:#08080c;border-radius:4px;overflow:hidden;margin-top:4px;border:1px solid var(--panel-border);}
+.stat-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.flavor-box{width:100%;max-width:520px;background:rgba(244,63,94,.06);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;font-style:italic;color:#e2e2ea;}
+.resource-row{display:flex;gap:8px;width:100%;max-width:520px;margin-bottom:10px;}
+.resource-box{flex:1;background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:10px 12px;}
+.resource-head{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;}
+.resource-head b{color:#fff;font-size:11.5px;}
+
+/* tuning */
+.tune-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--panel-border);gap:8px;}
+.tune-row:last-child{border-bottom:none;}
+.tune-name{font-weight:800;font-size:13.5px;display:flex;align-items:center;gap:6px;}
+.tune-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.tune-level-dots{display:flex;gap:4px;margin-top:5px;}
+.dot{width:8px;height:8px;border-radius:50%;background:#22222f;flex-shrink:0;}
+.dot.filled{background:var(--green);}
+.tune-btn{background:var(--gold);color:#241a00;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:11.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.tune-btn:disabled{background:#1e1e2d;color:var(--text-muted);}
+.tune-btn.maxed{background:var(--green);color:#04231a;}
+
+/* duel opponents */
+.subtabs{display:flex;gap:6px;width:100%;max-width:520px;margin-bottom:12px;}
+.subtab-btn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--panel-border);background:var(--panel-2);color:var(--text-muted);font-weight:800;font-size:11px;text-transform:uppercase;cursor:pointer;text-align:center;}
+.subtab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.opp-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:13px 14px;width:100%;display:flex;flex-direction:column;gap:8px;}
+.opp-card.boss{border-color:var(--gold);box-shadow:0 0 16px rgba(245,158,11,.18);}
+.opp-head{display:flex;justify-content:space-between;align-items:center;}
+.opp-name{font-weight:900;font-size:14.5px;}
+.opp-power{font-size:11px;color:var(--text-muted);font-weight:700;}
+.odds-bar-bg{width:100%;height:10px;background:#08080c;border-radius:5px;overflow:hidden;border:1px solid var(--panel-border);display:flex;}
+.odds-win{background:linear-gradient(90deg,var(--green),#34d399);height:100%;}
+.odds-lose{background:linear-gradient(90deg,#3f3f4a,#2a2a35);height:100%;}
+.opp-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);font-weight:700;flex-wrap:wrap;gap:4px;}
+.opp-foot b{color:var(--gold);}
+.locked-tag{background:#1e1e2d;color:var(--text-muted);padding:9px;border-radius:8px;text-align:center;font-weight:800;font-size:11.5px;text-transform:uppercase;}
+
+/* race sequence */
+.race-arena{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;}
+.vs-banner{text-align:center;font-weight:900;font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;}
+.vs-banner b{color:var(--accent);}
+.progress-track{background:linear-gradient(180deg,#111118,#0d0d12);border-radius:14px;border:1px solid var(--panel-border);padding:14px;display:flex;flex-direction:column;gap:12px;}
+.racer-row-label{font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;}
+.racer-track{width:100%;height:38px;position:relative;background:rgba(0,0,0,.35);border-radius:6px;padding:0 8px;border:1px solid rgba(255,255,255,.03);overflow:hidden;}
+.track-bg{position:absolute;top:50%;left:8px;right:8px;height:4px;background:rgba(255,255,255,.06);transform:translateY(-50%);border-radius:2px;}
+.track-fill{position:absolute;top:50%;left:8px;height:4px;transform:translateY(-50%);border-radius:2px;transition:width .1s linear;}
+.track-fill.player{background:var(--accent);box-shadow:0 0 6px var(--accent-glow);}
+.track-fill.ai{background:var(--text-muted);}
+.racer-icon{font-size:19px;position:absolute;top:50%;transform:translate(-50%,-50%);transition:left .1s linear;z-index:2;}
+.finish-flag{position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:15px;z-index:1;}
+
+.shift-panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:16px;text-align:center;}
+.shift-title{font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;}
+.pre-race-box{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:16px;width:100%;}
+.pre-race-line{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text-muted);padding:6px 0;border-bottom:1px solid var(--panel-border);}
+.pre-race-line:last-child{border-bottom:none;}
+.pre-race-line b{color:#fff;}
+.nitro-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);border:1px solid var(--panel-border);border-radius:10px;padding:11px 13px;margin-top:10px;cursor:pointer;}
+.nitro-toggle.on{border-color:var(--blue);box-shadow:0 0 12px rgba(56,189,248,.3);}
+.nitro-toggle .n-left{display:flex;align-items:center;gap:8px;font-weight:800;font-size:12.5px;}
+.switch{width:38px;height:22px;border-radius:11px;background:#22222f;position:relative;flex-shrink:0;}
+.switch.on{background:var(--blue);}
+.switch .knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .15s;}
+.switch.on .knob{left:19px;}
+.shift-bar-bg{width:100%;height:26px;background:#08080c;border-radius:13px;position:relative;overflow:hidden;border:1px solid var(--panel-border);margin-bottom:14px;}
+.shift-zone{position:absolute;top:0;height:100%;background:rgba(16,185,129,.4);border-left:2px dashed var(--green);border-right:2px dashed var(--green);}
+.shift-marker{position:absolute;top:0;width:5px;height:100%;background:#fff;box-shadow:0 0 8px #fff;transition:left .03s linear;}
+.big-btn{width:100%;padding:18px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 0 20px var(--accent-glow);}
+.big-btn:active{transform:scale(.97);}
+.big-btn:disabled{background:#1e1e2d;color:var(--text-muted);box-shadow:none;}
+.shift-feedback{font-size:13px;font-weight:900;margin-top:10px;min-height:18px;}
+.shift-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;}
+.shift-dots .d{width:10px;height:10px;border-radius:50%;background:#22222f;border:1px solid var(--panel-border);}
+.shift-dots .d.p{background:var(--green);}
+.shift-dots .d.g{background:var(--gold);}
+.shift-dots .d.m{background:var(--accent);}
+
+.countdown-box{text-align:center;padding:50px 0;font-size:60px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent-glow);}
+.result-box{background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:24px 18px;text-align:center;position:relative;overflow:hidden;}
+.result-box.win{border-color:var(--green);box-shadow:0 0 30px rgba(16,185,129,.2);}
+.result-box.lose{border-color:var(--accent);box-shadow:0 0 30px var(--accent-glow);}
+.result-title{font-size:22px;font-weight:900;margin-bottom:8px;}
+.result-sub{font-size:13px;color:var(--text-muted);margin-bottom:16px;font-weight:600;}
+.result-reward{font-size:26px;font-weight:900;color:var(--gold);margin-bottom:6px;}
+.police-box{margin-top:14px;background:rgba(56,189,248,.08);border:1px solid var(--blue);border-radius:10px;padding:12px;font-size:12.5px;font-weight:700;color:#bde6fb;}
+.xp-gain-box{margin-top:10px;background:rgba(167,139,250,.08);border:1px solid var(--purple);border-radius:10px;padding:10px;font-size:12px;font-weight:800;color:#e3d9ff;}
+
+/* jobs */
+.job-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:14px;width:100%;display:flex;flex-direction:column;gap:8px;}
+.job-head{display:flex;justify-content:space-between;align-items:center;}
+.job-name{font-weight:900;font-size:14px;}
+.job-desc{font-size:11.5px;color:var(--text-muted);}
+.job-reward{color:var(--green);font-weight:900;font-size:13px;}
+.job-btn{padding:11px;border-radius:8px;border:none;font-weight:900;font-size:12px;background:var(--green);color:#04231a;cursor:pointer;text-transform:uppercase;}
+.job-btn:disabled{background:#1e1e2d;color:var(--text-muted);}
+
+/* profile */
+.profile-hero{width:100%;max-width:520px;background:linear-gradient(135deg,#1a1420,#100c14);border:1px solid var(--panel-border);border-radius:16px;padding:22px;text-align:center;margin-bottom:14px;}
+.avatar-circle{width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;margin:0 auto 10px;overflow:hidden;border:2px solid rgba(255,255,255,.15);}
+.avatar-circle img{width:100%;height:100%;object-fit:cover;}
+.profile-name{font-size:19px;font-weight:900;}
+.profile-rep{color:var(--accent);font-weight:800;font-size:12.5px;text-transform:uppercase;margin-top:4px;}
+.stats-grid{width:100%;max-width:520px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat-tile{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px;text-align:center;}
+.stat-tile .val{font-size:20px;font-weight:900;color:#fff;}
+.stat-tile .lbl{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;font-weight:800;margin-top:3px;}
+.hub-grid{width:100%;max-width:520px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hub-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.hub-card:active{transform:scale(.97);}
+.hub-card .ic{width:26px;height:26px;color:var(--accent);}
+.hub-card .lbl{font-weight:800;font-size:12px;text-transform:uppercase;}
+.hub-card .sub{font-size:10px;color:var(--text-muted);font-weight:700;}
+.save-row{display:flex;gap:8px;width:100%;max-width:520px;margin-top:14px;}
+
+.no-car-msg{color:var(--text-muted);text-align:center;padding:40px 20px;font-weight:700;}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid var(--gold);color:#fff;padding:10px 18px;border-radius:10px;font-weight:800;font-size:12.5px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastIn .25s ease;max-width:90%;text-align:center;}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-8px);}to{opacity:1;transform:translate(-50%,0);}}
+
+nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-filter:blur(12px);display:flex;border-top:1px solid var(--panel-border);padding-bottom:env(safe-area-inset-bottom);z-index:100;}
+.nav-btn{flex:1;padding:10px 0 9px;text-align:center;color:var(--text-muted);font-size:9.5px;font-weight:800;text-transform:uppercase;cursor:pointer;}
+.nav-btn .ic{display:flex;justify-content:center;margin-bottom:3px;}
+.nav-btn .ic svg{width:20px;height:20px;}
+.nav-btn.active{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent);background:rgba(244,63,94,.05);}
+.nav-btn.active svg{filter:drop-shadow(0 0 4px var(--accent-glow));}
+.nav-avatar{width:20px;height:20px;border-radius:50%;overflow:hidden;margin:0 auto;}
+.nav-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* casino */
+.casino-card{background:linear-gradient(135deg,var(--panel),var(--panel-2));border:1px solid var(--panel-border);border-radius:16px;padding:16px;width:100%;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.casino-card:active{transform:scale(.98);}
+.casino-ic{width:46px;height:46px;flex-shrink:0;color:var(--gold);}
+.casino-ic svg{width:100%;height:100%;}
+.casino-info b{font-size:15px;font-weight:900;display:block;}
+.casino-info span{font-size:11px;color:var(--text-muted);font-weight:700;}
+.bet-panel{width:100%;max-width:480px;background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:14px;margin-top:12px;}
+.bet-row{display:flex;align-items:center;gap:8px;}
+.bet-input{flex:1;background:#08080c;border:1px solid var(--panel-border);color:#fff;font-weight:900;font-size:16px;text-align:center;padding:10px;border-radius:8px;}
+.chip-btn{background:var(--panel-2);border:1px solid var(--panel-border);color:#fff;font-weight:800;font-size:11px;padding:9px 10px;border-radius:8px;cursor:pointer;}
+.game-table{width:100%;max-width:480px;background:linear-gradient(180deg,#0f2418,#0a1a10);border:1px solid #1d4d33;border-radius:16px;padding:16px;margin-bottom:12px;min-height:120px;}
+.bj-hand-label{font-size:10.5px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;}
+.bj-cards{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;min-height:64px;}
+.card-el{width:44px;height:60px;background:#fff;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:15px;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+.card-el.red{color:#dc2626;}
+.card-el.black{color:#111;}
+.card-el.back{background:linear-gradient(135deg,var(--accent),var(--purple));}
+.roulette-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;width:100%;max-width:480px;margin-bottom:10px;}
+.rlt-num{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;cursor:pointer;border:2px solid transparent;color:#fff;}
+.rlt-num.red{background:#b91c1c;}
+.rlt-num.black{background:#1a1a24;}
+.rlt-num.green{background:var(--green);}
+.rlt-num.selected{border-color:var(--gold);transform:scale(1.08);}
+.rlt-outside{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;width:100%;max-width:480px;margin-bottom:12px;}
+.rlt-outside div{background:var(--panel-2);border:1px solid var(--panel-border);border-radius:8px;padding:9px;text-align:center;font-weight:800;font-size:11px;cursor:pointer;}
+.rlt-outside div.selected{background:var(--accent);border-color:var(--accent);}
+.rlt-result-num{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;margin:6px auto;color:#fff;}
+.slots-reels{display:flex;gap:8px;justify-content:center;margin-bottom:14px;}
+.reel{width:70px;height:80px;background:#08080c;border:2px solid var(--panel-border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;}
+.reel.spin{animation:reelspin .1s linear infinite;}
+@keyframes reelspin{from{transform:translateY(0);}to{transform:translateY(-8px);}}
+.dice-slider{width:100%;margin:16px 0;accent-color:var(--accent);height:6px;}
+.dice-readout{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:4px;}
+.dice-result-num{font-size:44px;font-weight:900;text-align:center;margin:10px 0;}
+.win-flash{animation:winFlash .6s ease;}
+@keyframes winFlash{0%{background:rgba(16,185,129,0);}30%{background:rgba(16,185,129,.25);}100%{background:rgba(16,185,129,0);}}
+.lose-flash{animation:loseFlash .5s ease;}
+@keyframes loseFlash{0%{background:rgba(244,63,94,0);}30%{background:rgba(244,63,94,.22);}100%{background:rgba(244,63,94,0);}}
+
+/* achievements / cases / settings / leaderboard */
+.ach-card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;}
+.ach-card.done{border-color:var(--green);}
+.ach-ic{width:38px;height:38px;border-radius:10px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.ach-card.done .ach-ic{background:rgba(16,185,129,.15);}
+.ach-body b{font-size:13.5px;font-weight:900;display:block;}
+.ach-body span{font-size:11px;color:var(--text-muted);font-weight:700;}
+.ach-reward{margin-left:auto;font-size:12px;font-weight:900;color:var(--gold);white-space:nowrap;}
+.case-card{width:100%;max-width:520px;background:linear-gradient(135deg,var(--panel),var(--panel-2));border:1px solid var(--panel-border);border-radius:16px;padding:18px;text-align:center;}
+.case-ic{font-size:44px;margin-bottom:8px;}
+.case-name{font-weight:900;font-size:16px;margin-bottom:4px;}
+.case-desc{font-size:11.5px;color:var(--text-muted);margin-bottom:12px;font-weight:600;}
+.setting-row{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.setting-row b{font-size:13px;font-weight:800;}
+.setting-row span{font-size:10.5px;color:var(--text-muted);display:block;font-weight:600;margin-top:2px;}
+.lb-row{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.lb-row.me{border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
+.lb-rank{font-weight:900;font-size:15px;color:var(--text-muted);width:24px;flex-shrink:0;}
+.lb-rank.top1{color:var(--gold);}
+.lb-rank.top2{color:#cbd5e1;}
+.lb-rank.top3{color:#d97706;}
+.lb-name{flex:1;font-weight:800;font-size:13px;}
+.lb-val{font-weight:900;font-size:13px;color:var(--gold);}
+
+/* daily modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--panel);border:1px solid var(--panel-border);border-radius:18px;padding:24px 20px;max-width:360px;width:100%;text-align:center;}
+.daily-strip{display:flex;gap:5px;margin:16px 0;justify-content:center;flex-wrap:wrap;}
+.daily-day{width:38px;height:44px;border-radius:8px;background:var(--panel-2);border:1px solid var(--panel-border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--text-muted);}
+.daily-day.claimed{background:rgba(16,185,129,.15);border-color:var(--green);color:var(--green);}
+.daily-day.today{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(245,158,11,.3);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="avatar-mini" id="header-avatar" onclick="switchTab('profile')">Г</div>
+    <div class="logo" onclick="tapLogo()">Auto<span>Syndicate</span></div>
+  </div>
+  <div class="header-stats">
+    <div class="rep-badge">LVL <span id="lvl-display">1</span></div>
+    <div class="balance"><span id="coins-display">1500</span> 💰</div>
+  </div>
+</header>
+
+<main id="main-scroll">
+
+  <!-- ГАРАЖ -->
+  <div id="screen-garage" class="screen active">
+    <div class="section-title"><span>Ваш гараж</span><span id="garage-count" style="color:#fff;font-size:12px;"></span></div>
+    <div class="list-container" id="garage-list"></div>
+  </div>
+
+  <!-- САЛОН -->
+  <div id="screen-shop" class="screen">
+    <div class="section-title"><span>Дилерский центр NFS</span></div>
+    <div class="list-container" id="shop-list"></div>
+  </div>
+
+  <!-- КАРТОЧКА МАШИНЫ -->
+  <div id="screen-cardetail" class="screen">
+    <div class="back-link" onclick="goBackFromDetail()">← Назад</div>
+    <div id="detail-content" style="width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center;"></div>
+  </div>
+
+  <!-- ТЮНИНГ -->
+  <div id="screen-tune" class="screen">
+    <div class="back-link" onclick="openDetail(state.tuneTargetId)">← Назад к карточке</div>
+    <div class="section-title"><span id="tune-car-title">Тюнинг</span></div>
+    <div class="list-container" id="tune-list" style="max-width:520px;"></div>
+  </div>
+
+  <!-- ДУЭЛЬ: выбор соперника -->
+  <div id="screen-duel-select" class="screen">
+    <div class="section-title"><span>Уличные дуэли</span></div>
+    <div class="subtabs">
+      <div class="subtab-btn active" id="dsub-normal" onclick="switchDuelSub('normal')">Соперники</div>
+      <div class="subtab-btn" id="dsub-tour" onclick="switchDuelSub('tour')">Турниры</div>
+    </div>
+    <div class="list-container" id="opponent-list"></div>
+  </div>
+
+  <!-- ГОНКА -->
+  <div id="screen-race" class="screen">
+    <div id="race-content" style="width:100%;max-width:480px;"></div>
+  </div>
+
+  <!-- РАБОТА -->
+  <div id="screen-jobs" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Подработка</span></div>
+    <div class="list-container" id="jobs-list"></div>
+  </div>
+
+  <!-- КАЗИНО ХАБ -->
+  <div id="screen-casino" class="screen">
+    <div class="section-title"><span>Подпольное казино</span></div>
+    <div class="list-container" id="casino-hub-list"></div>
+  </div>
+
+  <!-- BLACKJACK -->
+  <div id="screen-blackjack" class="screen">
+    <div class="back-link" onclick="switchTab('casino')">← Казино</div>
+    <div class="section-title"><span>Блэкджек 21</span></div>
+    <div class="game-table">
+      <div class="bj-hand-label"><span>Дилер</span><span id="bj-dealer-score"></span></div>
+      <div class="bj-cards" id="bj-dealer-cards"></div>
+      <div class="bj-hand-label"><span>Вы</span><span id="bj-player-score"></span></div>
+      <div class="bj-cards" id="bj-player-cards"></div>
+    </div>
+    <div id="bj-message" style="width:100%;max-width:480px;text-align:center;font-weight:900;font-size:14px;min-height:20px;margin-bottom:8px;"></div>
+    <div class="bet-panel" id="bj-bet-panel">
+      <div class="bet-row">
+        <button class="chip-btn" onclick="bjAdjustBet(-50)">-50</button>
+        <input class="bet-input" id="bj-bet-input" type="number" value="100">
+        <button class="chip-btn" onclick="bjAdjustBet(50)">+50</button>
+        <button class="chip-btn" onclick="bjMaxBet()">MAX</button>
+      </div>
+      <button class="btn btn-select" style="margin-top:10px;" onclick="bjDeal()">РАЗДАТЬ</button>
+    </div>
+    <div class="btn-row" id="bj-action-panel" style="display:none;width:100%;max-width:480px;gap:7px;"></div>
+  </div>
+
+  <!-- ROULETTE -->
+  <div id="screen-roulette" class="screen">
+    <div class="back-link" onclick="switchTab('casino')">← Казино</div>
+    <div class="section-title"><span>Рулетка</span></div>
+    <div class="rlt-result-num" id="rlt-result" style="background:#1a1a24;">?</div>
+    <div class="roulette-grid" id="rlt-grid"></div>
+    <div class="rlt-outside" id="rlt-outside"></div>
+    <div class="bet-panel">
+      <div class="bet-row">
+        <button class="chip-btn" onclick="rltAdjustBet(-50)">-50</button>
+        <input class="bet-input" id="rlt-bet-input" type="number" value="100">
+        <button class="chip-btn" onclick="rltAdjustBet(50)">+50</button>
+        <button class="chip-btn" onclick="rltMaxBet()">MAX</button>
+      </div>
+      <button class="btn btn-select" style="margin-top:10px;" onclick="rltSpin()">КРУТИТЬ</button>
+    </div>
+  </div>
+
+  <!-- SLOTS -->
+  <div id="screen-slots" class="screen">
+    <div class="back-link" onclick="switchTab('casino')">← Казино</div>
+    <div class="section-title"><span>Слоты «777»</span></div>
+    <div class="game-table">
+      <div class="slots-reels">
+        <div class="reel" id="reel0">🍒</div>
+        <div class="reel" id="reel1">🍋</div>
+        <div class="reel" id="reel2">🔔</div>
+      </div>
+      <div id="slots-message" style="text-align:center;font-weight:900;font-size:13px;min-height:18px;"></div>
+    </div>
+    <div class="bet-panel">
+      <div class="bet-row">
+        <button class="chip-btn" onclick="slotsAdjustBet(-25)">-25</button>
+        <input class="bet-input" id="slots-bet-input" type="number" value="50">
+        <button class="chip-btn" onclick="slotsAdjustBet(25)">+25</button>
+        <button class="chip-btn" onclick="slotsMaxBet()">MAX</button>
+      </div>
+      <button class="btn btn-select" style="margin-top:10px;" onclick="slotsSpin()">КРУТИТЬ</button>
+    </div>
+  </div>
+
+  <!-- DICE -->
+  <div id="screen-dice" class="screen">
+    <div class="back-link" onclick="switchTab('casino')">← Казино</div>
+    <div class="section-title"><span>Кости</span></div>
+    <div class="game-table">
+      <div class="dice-result-num" id="dice-result" style="color:var(--text-muted);">—</div>
+      <div class="dice-readout"><span>Шанс: <b id="dice-chance">49%</b></span><span>Выплата: <b id="dice-mult">x2.00</b></span></div>
+      <input class="dice-slider" type="range" id="dice-slider" min="2" max="98" value="50" oninput="diceUpdate()">
+      <div class="dice-readout"><span>Бросить меньше</span><span id="dice-target">50</span></div>
+    </div>
+    <div class="bet-panel">
+      <div class="bet-row">
+        <button class="chip-btn" onclick="diceAdjustBet(-50)">-50</button>
+        <input class="bet-input" id="dice-bet-input" type="number" value="100">
+        <button class="chip-btn" onclick="diceAdjustBet(50)">+50</button>
+        <button class="chip-btn" onclick="diceMaxBet()">MAX</button>
+      </div>
+      <button class="btn btn-select" style="margin-top:10px;" onclick="diceRoll()">БРОСИТЬ</button>
+    </div>
+  </div>
+
+  <!-- ПРОФИЛЬ -->
+  <div id="screen-profile" class="screen">
+    <div class="profile-hero">
+      <div class="avatar-circle" id="avatar-letter">Г</div>
+      <div class="profile-name" id="profile-name">Гонщик</div>
+      <div class="profile-rep">Уличный авторитет: LVL <span id="profile-lvl">1</span></div>
+    </div>
+    <div class="xp-wrap">
+      <div class="xp-top"><span>Опыт</span><span id="xp-text">0/100</span></div>
+      <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-tile"><div class="val" id="p-balance">0</div><div class="lbl">Баланс 💰</div></div>
+      <div class="stat-tile"><div class="val" id="p-cars">0</div><div class="lbl">Машин в гараже</div></div>
+      <div class="stat-tile"><div class="val" id="p-races">0</div><div class="lbl">Заездов всего</div></div>
+      <div class="stat-tile"><div class="val" id="p-winrate">0%</div><div class="lbl">Процент побед</div></div>
+      <div class="stat-tile"><div class="val" id="p-wins">0</div><div class="lbl">Побед</div></div>
+      <div class="stat-tile"><div class="val" id="p-losses">0</div><div class="lbl">Поражений</div></div>
+      <div class="stat-tile"><div class="val" id="p-earned">0</div><div class="lbl">Всего заработано</div></div>
+      <div class="stat-tile"><div class="val" id="p-fines">0</div><div class="lbl">Штрафов от ДПС</div></div>
+    </div>
+    <div class="hub-grid">
+      <div class="hub-card" onclick="switchTab('jobs')"><div class="ic">💼</div><div class="lbl">Подработка</div><div class="sub">2-й доход</div></div>
+      <div class="hub-card" onclick="switchTab('achievements')"><div class="ic">🏅</div><div class="lbl">Достижения</div><div class="sub" id="ach-progress-sub">0/0</div></div>
+      <div class="hub-card" onclick="switchTab('cases')"><div class="ic">🎁</div><div class="lbl">Кейсы</div><div class="sub">Нитро: <span id="hub-nitro-count">0</span></div></div>
+      <div class="hub-card" onclick="switchTab('leaderboard')"><div class="ic">📊</div><div class="lbl">Рейтинг</div><div class="sub">Синдикат</div></div>
+      <div class="hub-card" onclick="openDailyModal(true)"><div class="ic">📅</div><div class="lbl">Награда дня</div><div class="sub" id="daily-hub-sub">Забрать</div></div>
+      <div class="hub-card" onclick="switchTab('settings')"><div class="ic">⚙️</div><div class="lbl">Настройки</div><div class="sub">Сейв/сброс</div></div>
+    </div>
+    <div class="save-row">
+      <button class="btn btn-green" onclick="manualSave()">💾 СОХРАНИТЬ</button>
+    </div>
+  </div>
+
+  <!-- ДОСТИЖЕНИЯ -->
+  <div id="screen-achievements" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Достижения</span></div>
+    <div class="list-container" id="ach-list"></div>
+  </div>
+
+  <!-- КЕЙСЫ -->
+  <div id="screen-cases" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Кейсы синдиката</span></div>
+    <div class="list-container" id="cases-list"></div>
+  </div>
+
+  <!-- РЕЙТИНГ -->
+  <div id="screen-leaderboard" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Рейтинг подполья</span></div>
+    <div class="list-container" id="lb-list"></div>
+  </div>
+
+  <!-- НАСТРОЙКИ -->
+  <div id="screen-settings" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Настройки</span></div>
+    <div class="setting-row"><div><b>Звук</b><span>Звуковые эффекты интерфейса</span></div><div class="switch" id="set-sound" onclick="toggleSetting('sound')"><div class="knob"></div></div></div>
+    <div class="setting-row"><div><b>Анимации</b><span>Эффекты выигрыша и переходов</span></div><div class="switch" id="set-anim" onclick="toggleSetting('animations')"><div class="knob"></div></div></div>
+    <div class="setting-row"><div><b>Экспорт сохранения</b><span>Скачать файл прогресса .json</span></div><button class="btn btn-ghost" style="width:auto;padding:9px 14px;" onclick="exportSave()">Экспорт</button></div>
+    <div class="setting-row"><div><b>Импорт сохранения</b><span>Загрузить файл прогресса</span></div><label class="btn btn-ghost" style="width:auto;padding:9px 14px;cursor:pointer;">Импорт<input type="file" accept="application/json" style="display:none" onchange="importSave(event)"></label></div>
+    <div class="setting-row"><div><b>Сброс прогресса</b><span>Удалить весь прогресс безвозвратно</span></div><button class="btn btn-select" style="width:auto;padding:9px 14px;background:var(--accent);" onclick="resetProgress()">Сброс</button></div>
+    <div style="width:100%;max-width:520px;text-align:center;color:var(--text-muted);font-size:11px;font-weight:700;margin-top:14px;">Автосохранение включено · последнее сохранение: <span id="last-saved-text">—</span></div>
+  </div>
+
+</main>
+
+<nav>
+  <div class="nav-btn active" onclick="switchTab('garage')" data-tab="garage"><span class="ic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l1.5-5A2 2 0 0 1 6.4 4.5h11.2A2 2 0 0 1 19.5 6l1.5 5"/><rect x="2.5" y="11" width="19" height="7" rx="1.5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>
+  </span>Гараж</div>
+  <div class="nav-btn" onclick="switchTab('shop')" data-tab="shop"><span class="ic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/></svg>
+  </span>Салон</div>
+  <div class="nav-btn" onclick="switchTab('duel-select')" data-tab="duel-select"><span class="ic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h6l-1 3 1 3H5"/><path d="M13 5h4l-1 2.5L17 10h-4"/></svg>
+  </span>Дуэль</div>
+  <div class="nav-btn" onclick="switchTab('casino')" data-tab="casino"><span class="ic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
+  </span>Казино</div>
+  <div class="nav-btn" onclick="switchTab('profile')" data-tab="profile"><span class="ic" id="nav-profile-ic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
+  </span>Профиль</div>
+</nav>
+
+<div id="daily-modal-root"></div>
+
+<script>
+/* ==================== DEFAULT STATE ==================== */
+function defaultState(){
+  return {
+    playerName: "Гонщик",
+    playerPhoto: null,
+    coins: 1500,
+    xp: 0,
+    level: 1,
+    nitro: 2,
+    ownedCars: [1],
+    activeCarId: 1,
+    upgrades: {},
+    fuel: {},
+    condition: {},
+    stats: { races:0, wins:0, losses:0, totalEarned:0, totalSpent:0, finesPaid:0, finesCount:0, casinoWagered:0, casinoWon:0, casesOpened:0 },
+    jobCooldowns: {},
+    achievements: {},
+    dailyStreak: 0,
+    lastDailyClaim: 0,
+    settings: { sound:true, animations:true },
+    logoTaps: 0,
+    duelSub: 'normal',
+    detailTargetId: null,
+    tuneTargetId: null,
+    createdAt: Date.now(),
+    lastSaved: 0
+  };
+}
+let state = defaultState();
+
+/* ==================== SAVE / LOAD ==================== */
+const SAVE_KEY = 'autosyndicate_save_v2';
+function saveState(){
+  try{
+    state.lastSaved = Date.now();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const el = document.getElementById('last-saved-text');
+    if(el) el.innerText = new Date(state.lastSaved).toLocaleTimeString('ru-RU');
+  }catch(e){ console.warn('save failed', e); }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    const base = defaultState();
+    state = Object.assign(base, saved);
+    state.stats = Object.assign(base.stats, saved.stats||{});
+    state.settings = Object.assign(base.settings, saved.settings||{});
+    state.upgrades = saved.upgrades || {};
+    state.fuel = saved.fuel || {};
+    state.condition = saved.condition || {};
+    state.jobCooldowns = saved.jobCooldowns || {};
+    state.achievements = saved.achievements || {};
+    if(!Array.isArray(state.ownedCars) || state.ownedCars.length===0) state.ownedCars=[1];
+  }catch(e){ console.warn('load failed, using defaults', e); state = defaultState(); }
+}
+function manualSave(){ saveState(); showToast("💾 Прогресс сохранён"); }
+function exportSave(){
+  saveState();
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'autosyndicate_save.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast("📤 Файл сохранения скачан");
+}
+function importSave(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const saved = JSON.parse(e.target.result);
+      const base = defaultState();
+      state = Object.assign(base, saved);
+      state.stats = Object.assign(base.stats, saved.stats||{});
+      state.settings = Object.assign(base.settings, saved.settings||{});
+      saveState();
+      showToast("📥 Сохранение импортировано");
+      switchTab('profile');
+    }catch(err){ showToast("⚠️ Неверный файл сохранения"); }
+  };
+  reader.readAsText(file);
+}
+function resetProgress(){
+  if(!confirm("Точно сбросить весь прогресс? Это действие необратимо.")) return;
+  if(!confirm("Последнее предупреждение: все машины, деньги и достижения будут удалены. Продолжить?")) return;
+  localStorage.removeItem(SAVE_KEY);
+  state = defaultState();
+  showToast("🗑️ Прогресс сброшен");
+  switchTab('garage');
+}
+window.addEventListener('beforeunload', saveState);
+setInterval(saveState, 20000);
+
+/* ==================== TELEGRAM SYNC ==================== */
+function initTelegram(){
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.expand();
+      const u = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      if (u){
+        if(u.first_name && (state.playerName==='Гонщик' || !state.playerName)) state.playerName = u.first_name;
+        if(u.photo_url) state.playerPhoto = u.photo_url;
+      }
+    }
+  } catch(e) {}
+}
+function avatarHTML(){
+  const letter = (state.playerName||'Г').charAt(0).toUpperCase();
+  if(state.playerPhoto) return '<img src="'+state.playerPhoto+'" alt="avatar" onerror="this.parentElement.innerHTML=\''+letter+'\'">';
+  return letter;
+}
+function updateAvatarUI(){
+  const h = document.getElementById('header-avatar'); if(h) h.innerHTML = avatarHTML();
+  const p = document.getElementById('avatar-letter'); if(p) p.innerHTML = avatarHTML();
+  const n = document.getElementById('nav-profile-ic');
+  if(n){
+    if(state.playerPhoto){ n.innerHTML = '<div class="nav-avatar"><img src="'+state.playerPhoto+'" onerror="this.parentElement.parentElement.innerHTML=\'\'"></div>'; }
+  }
+}
+
+/* ==================== CARS DB ==================== */
+const carsDB = [
+  { id:1, name:"ВАЗ-2106 'Шестёрка'", price:0, power:150, tier:"Street Tier 1", cat:"street", flavor:"Легенда дворов. Заводится не с первого раза, зато душа поёт, когда наконец завёлся." },
+  { id:2, name:"Volkswagen Golf Mk2", price:700, power:190, tier:"Street Tier 1", cat:"street", flavor:"Немецкая надёжность по цене б/у самоката. Идеально для первых заработков." },
+  { id:3, name:"Toyota AE86 Trueno", price:1400, power:260, tier:"Street Tier 2", cat:"jdm", flavor:"Панда на колёсах. Говорят, кто-то развозил на такой тофу по горным серпантинам." },
+  { id:4, name:"Nissan Silvia S15", price:2600, power:350, tier:"Tuner Tier 2", cat:"jdm", flavor:"Дрифт-икона. На светофорах косятся, на трассе — уважают." },
+  { id:5, name:"Mazda RX-7 FD", price:3200, power:390, tier:"Tuner Tier 2", cat:"jdm", flavor:"Роторный движок воет как турбина. Соседи не любят, зато завидуют." },
+  { id:6, name:"Toyota Supra MK4", price:4400, power:430, tier:"Tuner Tier 3", cat:"jdm", flavor:"2JZ можно крутить бесконечно. Легенда подполья, проверено временем." },
+  { id:7, name:"Mitsubishi Lancer Evo IX", price:4900, power:450, tier:"Tuner Tier 3", cat:"jdm", flavor:"Полный привод и характер бойца. На мокром асфальте не подведёт." },
+  { id:8, name:"Subaru Impreza WRX STI", price:5100, power:465, tier:"Tuner Tier 3", cat:"jdm", flavor:"Оппозитный рокот слышно за квартал. Раллийные гены не пропьёшь." },
+  { id:9, name:"Nissan Skyline GT-R R34", price:6800, power:500, tier:"Tuner Tier 3", cat:"jdm", flavor:"Godzilla. Просто Godzilla. На этом можно закончить описание." },
+  { id:10, name:"Ford Mustang GT", price:3400, power:440, tier:"Muscle Tier 3", cat:"muscle", flavor:"Американская классика. Жрёт бензин как не в себя, но звук V8 того стоит." },
+  { id:11, name:"Dodge Challenger SRT", price:5400, power:490, tier:"Muscle Tier 3", cat:"muscle", flavor:"Тяжёлый, злой, прямолинейный. На драге — король." },
+  { id:12, name:"Chevrolet Camaro SS", price:5700, power:505, tier:"Muscle Tier 3", cat:"muscle", flavor:"Низкий, широкий, агрессивный силуэт. Дизайнеры не сдерживались." },
+  { id:13, name:"BMW M4 Competition", price:7600, power:520, tier:"Sport Tier 4", cat:"sport", flavor:"Баварский хирургический инструмент. Точность в каждом повороте." },
+  { id:14, name:"Mercedes-AMG GT", price:8300, power:560, tier:"Sport Tier 4", cat:"sport", flavor:"Длинный капот, короткий характер. AMG не терпит компромиссов." },
+  { id:15, name:"Audi RS6 Avant", price:8700, power:575, tier:"Sport Tier 4", cat:"sport", flavor:"Универсал, который порвёт половину спорткаров. Quattro не обманывает." },
+  { id:16, name:"Porsche 911 Turbo S", price:13500, power:660, tier:"Supercar Tier 5", cat:"super", flavor:"Инженерное совершенство Штутгарта. Заезд — формальность, победа — данность." },
+  { id:17, name:"Porsche 911 GT3 RS", price:15800, power:700, tier:"Supercar Tier 5", cat:"super", flavor:"Трековый снаряд с номерами. Антикрыло не для красоты." },
+  { id:18, name:"Audi R8 V10", price:17200, power:730, tier:"Supercar Tier 5", cat:"super", flavor:"Атмосферная десятка ревёт так, что закладывает уши прохожим." },
+  { id:19, name:"Nissan GT-R R35", price:18900, power:750, tier:"Supercar Tier 5", cat:"super", flavor:"Компьютерный мозг и звериная тяга. Из коробки готов рвать полигон." },
+  { id:20, name:"McLaren 720S", price:24500, power:790, tier:"Supercar Tier 5", cat:"super", flavor:"Глаза-фары смотрят прямо в душу соперника ещё до старта." },
+  { id:21, name:"Ferrari 488 Pista", price:32000, power:860, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Red is the fastest colour, как говорят в Маранелло." },
+  { id:22, name:"Ferrari SF90 Stradale", price:38500, power:900, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Гибрид, который стыдно называть гибридом. Разгон рвёт шею." },
+  { id:23, name:"Lamborghini Huracan", price:42000, power:930, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Итальянский бык на асфальте. Соседи снимают на телефон каждый выезд." },
+  { id:24, name:"Lamborghini Aventador", price:52000, power:975, tier:"Legendary Boss", cat:"legend", flavor:"Ножничные двери — билет в клуб избранных подполья." },
+  { id:25, name:"Bugatti Chiron", price:78000, power:1200, tier:"Legendary Boss", cat:"legend", flavor:"Не машина — произведение искусства с мотором W16. Топ пищевой цепи." },
+  { id:26, name:"Комета Тьмы (миф)", price:95000, power:1350, tier:"Mythic ★★★", cat:"myth", flavor:"Говорят, объезжает светофоры сама и появляется только на полнолуние. Никто не видел документов на эту тачку." },
+  { id:27, name:"'Дед Толян' — ржавое чудо", price:9999, power:1050, tier:"Mythic ★★★", cat:"myth", flavor:"Снаружи ведро с гайками, внутри — движок неизвестного происхождения. Механики отказываются его обслуживать из уважения." }
+];
+const CAT_LABELS = { street:"Уличный", jdm:"JDM тюнер", muscle:"Масл-кар", sport:"Спорт", super:"Суперкар", hyper:"Гиперкар", legend:"Легенда", myth:"Миф подполья" };
+const CAT_COLORS = { street:['#94a3b8','#334155'], jdm:['#38bdf8','#0c4a6e'], muscle:['#fb923c','#7c2d12'], sport:['#a78bfa','#4c1d95'], super:['#fb7185','#4c0519'], hyper:['#fbbf24','#78350f'], legend:['#facc15','#713f12'], myth:['#c084fc','#1e1033'] };
+
+/* ==================== CAR ART (SVG, matches by category — no more mismatched photos) ==================== */
+function carArtSVG(car){
+  const col = CAT_COLORS[car.cat] || CAT_COLORS.street;
+  const c1=col[0], c2=col[1];
+  const shape = ['street','jdm','muscle'].includes(car.cat) ? 'classic' : (['sport','super'].includes(car.cat) ? 'coupe' : 'hyper');
+  const gid = 'g'+car.id;
+  const spoiler = shape==='hyper' ? '<rect x="150" y="53" width="58" height="6" rx="2" fill="'+c1+'"/><rect x="154" y="41" width="6" height="15" fill="'+c1+'"/><rect x="198" y="41" width="6" height="15" fill="'+c1+'"/>' : '';
+  let body;
+  if(shape==='classic'){
+    body = '<path d="M20 110 Q20 90 45 88 L70 60 Q80 50 100 50 L160 50 Q180 50 190 65 L215 88 Q240 90 240 110 L240 118 Q240 124 232 124 L28 124 Q20 124 20 118 Z" fill="url(#'+gid+')"/>';
+  } else if(shape==='coupe'){
+    body = '<path d="M15 112 Q15 88 42 85 L65 55 Q78 42 105 42 L165 42 Q188 44 200 60 L222 85 Q245 88 245 112 L245 120 Q245 126 237 126 L23 126 Q15 126 15 120 Z" fill="url(#'+gid+')"/>';
+  } else {
+    body = '<path d="M10 114 Q10 95 35 90 L60 62 Q75 44 110 42 L160 42 Q195 44 208 65 L228 90 Q250 92 250 114 L250 122 Q250 127 242 127 L18 127 Q10 127 10 122 Z" fill="url(#'+gid+')"/>';
+  }
+  const hueShift = ((car.id*29) % 40) - 20;
+  return '<svg viewBox="0 0 260 150" preserveAspectRatio="xMidYMid slice" style="filter:hue-rotate('+hueShift+'deg)">'+
+    '<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient>'+
+    '<linearGradient id="bgg'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e0e16"/><stop offset="1" stop-color="#050508"/></linearGradient></defs>'+
+    '<rect width="260" height="150" fill="url(#bgg'+gid+')"/>'+
+    '<ellipse cx="130" cy="129" rx="112" ry="9" fill="'+c1+'" opacity="0.18"/>'+
+    body + spoiler +
+    '<rect x="35" y="66" width="185" height="2" fill="rgba(255,255,255,.15)"/>'+
+    '<circle cx="65" cy="126" r="17" fill="#0a0a0e" stroke="'+c1+'" stroke-width="3"/><circle cx="65" cy="126" r="6" fill="'+c1+'"/>'+
+    '<circle cx="195" cy="126" r="17" fill="#0a0a0e" stroke="'+c1+'" stroke-width="3"/><circle cx="195" cy="126" r="6" fill="'+c1+'"/>'+
+    '<rect x="205" y="94" width="15" height="6" rx="2" fill="#fff" opacity="0.9"/>'+
+    '<rect x="28" y="94" width="10" height="5" rx="2" fill="#ff3b3b" opacity="0.85"/>'+
+    '</svg>';
+}
+
+/* ==================== TUNING (5 stages + Nitro + Tires) ==================== */
+const TUNE_TYPES = [
+  { key:"engine", name:"Двигатель", icon:"🔧", desc:"Прошивка ЭБУ и доработка мотора", hpPerStage:[0.08,0.09,0.10,0.11,0.12] },
+  { key:"turbo", name:"Турбина", icon:"🌀", desc:"Больше буст — больше тяги", hpPerStage:[0.06,0.07,0.08,0.09,0.10] },
+  { key:"gearbox", name:"КПП", icon:"⚙️", desc:"Короткие передачи, быстрее разгон", hpPerStage:[0.05,0.06,0.06,0.07,0.08] },
+  { key:"tires", name:"Резина", icon:"🛞", desc:"Слики держат разгон без пробуксовки", hpPerStage:[0.03,0.04,0.05,0.05,0.06] }
+];
+function getUpg(carId){ if(!state.upgrades[carId]) state.upgrades[carId]={engine:0,turbo:0,gearbox:0,tires:0}; TUNE_TYPES.forEach(t=>{ if(state.upgrades[carId][t.key]===undefined) state.upgrades[carId][t.key]=0; }); return state.upgrades[carId]; }
+function getEffectivePower(car){
+  const upg=getUpg(car.id); let mult=1;
+  TUNE_TYPES.forEach(t=>{ const lvl=upg[t.key]; for(let i=0;i<lvl;i++) mult+=t.hpPerStage[i]; });
+  const cond = getCondition(car.id);
+  if(cond<40) mult*=0.85; else if(cond<70) mult*=0.93;
+  return Math.round(car.power*mult);
+}
+function tuneStagePrice(car,stageIndex){ const base=Math.max(250,Math.round(car.price*0.10)); return Math.round(base*(stageIndex+1)*1.6); }
+
+/* ==================== FUEL / CONDITION ==================== */
+function getFuel(carId){ if(state.fuel[carId]===undefined) state.fuel[carId]=100; return state.fuel[carId]; }
+function getCondition(carId){ if(state.condition[carId]===undefined) state.condition[carId]=100; return state.condition[carId]; }
+function fuelPricePerUnit(car){ return Math.max(1, Math.round(car.price/2500)+1); }
+function repairPricePerUnit(car){ return Math.max(2, Math.round(car.price/1400)+2); }
+function refuelCar(carId){
+  const car=carsDB.find(c=>c.id===carId);
+  const need = 100-getFuel(carId);
+  if(need<=0){ showToast("Бак уже полон"); return; }
+  const cost = need*fuelPricePerUnit(car);
+  if(state.coins<cost){ showToast("Недостаточно денег на заправку"); return; }
+  state.coins-=cost; state.stats.totalSpent+=cost; state.fuel[carId]=100;
+  showToast("⛽ Заправлено за "+fmt(cost)+" 💰");
+  saveState(); openDetail(carId);
+}
+function repairCar(carId){
+  const car=carsDB.find(c=>c.id===carId);
+  const need = 100-getCondition(carId);
+  if(need<=0){ showToast("Машина в идеальном состоянии"); return; }
+  const cost = need*repairPricePerUnit(car);
+  if(state.coins<cost){ showToast("Недостаточно денег на ремонт"); return; }
+  state.coins-=cost; state.stats.totalSpent+=cost; state.condition[carId]=100;
+  showToast("🛠️ Отремонтировано за "+fmt(cost)+" 💰");
+  saveState(); openDetail(carId);
+}
+
+/* ==================== XP / LEVEL ==================== */
+function xpNeeded(lvl){ return 80+lvl*45; }
+function addXP(n){
+  state.xp+=n;
+  let leveled=false;
+  while(state.xp>=xpNeeded(state.level)){ state.xp-=xpNeeded(state.level); state.level++; leveled=true; }
+  if(leveled){ showToast("⭐ Новый уровень! Теперь LVL "+state.level); state.coins += state.level*50; }
+  updateHeader();
+}
+
+/* ==================== OPPONENTS / TOURNAMENTS ==================== */
+const opponentsDB = [
+  { id:1, name:"Дворовый Стас на 'копейке'", power:220, reward:220, unlockLevel:1, taunt:"«Погнали, братан, я на этой тачке с музыкой из телефона!»" },
+  { id:2, name:"Толян с раёна на Golf'e", power:340, reward:380, unlockLevel:1, taunt:"«У меня чип стоит, между прочим!»" },
+  { id:3, name:"Августина на мамином Audi", power:480, reward:650, unlockLevel:2, taunt:"«Мама не узнает, погнали!»" },
+  { id:4, name:"Ночной Гонщик 'Феникс'", power:620, reward:1100, unlockLevel:4, taunt:"«Тут тебе не покатушки, тут дуэль.»" },
+  { id:5, name:"Барон трассы Вадим", power:780, reward:2000, unlockLevel:6, taunt:"«Многие пытались. Мало кто финишировал первым.»" },
+  { id:6, name:"Скрытная 'Тень'", power:950, reward:3600, unlockLevel:8, taunt:"«...» (она никогда не разговаривает)" },
+  { id:7, name:"Легенда подполья Дариан", power:1150, reward:6000, unlockLevel:11, taunt:"«Я жду соперника десять лет. Ты следующий проигравший.»", boss:true },
+  { id:8, name:"Финалист 'Полночь'", power:1350, reward:10000, unlockLevel:14, taunt:"«Никто не побеждал меня дважды. Некоторые — ни разу.»", boss:true },
+  { id:9, name:"Король подполья «Синдикат»", power:1550, reward:20000, unlockLevel:18, taunt:"«Ты хоть знаешь, кто здесь всем заправляет?»", boss:true }
+];
+const tournamentsDB = [
+  { id:'t1', name:"Ночной Кубок", power:500, reward:2500, entryFee:300, unlockLevel:3, taunt:"Ночной турнир для смелых новичков." },
+  { id:'t2', name:"Кубок Синдиката", power:900, reward:9000, entryFee:1200, unlockLevel:7, taunt:"Только сильнейшие доходят до финала." },
+  { id:'t3', name:"Гран-При Подполья", power:1400, reward:30000, entryFee:4000, unlockLevel:13, taunt:"Легенды подполья рождаются здесь." }
+];
+function entryFeeFor(opp){ return opp.entryFee!==undefined ? opp.entryFee : Math.round(opp.reward*0.12)+20; }
+function fuelCostFor(opp){ return opp.boss ? 26 : (opp.entryFee!==undefined ? 22 : 14); }
+
+/* ==================== JOBS ==================== */
+const jobsDB = [
+  { id:"wash", name:"Мойка тачек в гараже", desc:"Быстро, скучно, но надёжно", reward:90, xp:6, cooldown:25 },
+  { id:"delivery", name:"Доставка запчастей", desc:"Погонять по району без риска", reward:180, xp:12, cooldown:60 },
+  { id:"taxi", name:"Ночной таксист", desc:"Долгая смена, зато солидно платят", reward:340, xp:20, cooldown:150 }
+];
+
+/* ==================== UTIL ==================== */
+function fmt(n){ return Math.round(n).toLocaleString('ru-RU'); }
+function showToast(msg){
+  const t=document.createElement('div');
+  t.className='toast'; t.innerText=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+function flashResult(el, win){
+  if(!state.settings.animations || !el) return;
+  el.classList.remove('win-flash','lose-flash');
+  void el.offsetWidth;
+  el.classList.add(win?'win-flash':'lose-flash');
+}
+function tapLogo(){
+  state.logoTaps++;
+  if(state.logoTaps===5){
+    state.logoTaps=0;
+    state.coins+=250;
+    state.nitro+=1;
+    showToast("🎁 Секретный бонус синдиката: +250 💰 и 1 нитро");
+    updateHeader(); saveState();
+    checkAchievements();
+  }
+}
+
+/* ==================== NAV ==================== */
+const TAB_MAP = {garage:0,shop:1,'duel-select':2,casino:3,profile:4};
+function switchTab(tabId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const target = document.getElementById('screen-'+tabId);
+  if(target) target.classList.add('active');
+  const buttons=document.querySelectorAll('.nav-btn');
+  if(TAB_MAP[tabId]!==undefined) buttons[TAB_MAP[tabId]].classList.add('active');
+  document.getElementById('main-scroll').scrollTop=0;
+
+  if(tabId==='garage') renderGarage();
+  if(tabId==='shop') renderShop();
+  if(tabId==='duel-select') renderOpponents();
+  if(tabId==='jobs') renderJobs();
+  if(tabId==='profile') renderProfile();
+  if(tabId==='casino') renderCasinoHub();
+  if(tabId==='achievements') renderAchievements();
+  if(tabId==='cases') renderCases();
+  if(tabId==='leaderboard') renderLeaderboard();
+  if(tabId==='settings') renderSettings();
+  saveState();
+}
+function switchDuelSub(sub){
+  state.duelSub=sub;
+  document.getElementById('dsub-normal').classList.toggle('active', sub==='normal');
+  document.getElementById('dsub-tour').classList.toggle('active', sub==='tour');
+  renderOpponents();
+}
+
+function updateHeader(){
+  document.getElementById('coins-display').innerText=fmt(state.coins);
+  document.getElementById('lvl-display').innerText=state.level;
+}
+
+/* ==================== GARAGE / SHOP ==================== */
+function renderGarage(){
+  updateHeader();
+  const container=document.getElementById('garage-list');
+  document.getElementById('garage-count').innerText = state.ownedCars.length + " машин";
+  container.innerHTML='';
+  const myCars=carsDB.filter(c=>state.ownedCars.includes(c.id));
+  myCars.forEach(car=>{
+    const isActive=state.activeCarId===car.id;
+    const eff=getEffectivePower(car);
+    const fuel=getFuel(car.id), cond=getCondition(car.id);
+    container.innerHTML += '<div class="car-card" style="'+(isActive?'border-color:var(--accent);':'')+'">'+
+        '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+
+          '<div class="tier-badge">'+car.tier+'</div>'+
+          '<div class="power-badge">'+eff+' л.с.</div>'+
+        '</div>'+
+        '<div class="car-info-box">'+
+          '<div class="car-title">'+car.name+'</div>'+
+          '<div class="car-stats"><div>Статус: <span style="color:'+(isActive?'var(--accent)':'var(--green)')+'">'+(isActive?'Активна':'В гараже')+'</span></div>'+
+          '<div>⛽ <span style="color:'+(fuel<25?'var(--accent)':'#fff')+'">'+fuel+'%</span></div>'+
+          '<div>🔧 <span style="color:'+(cond<40?'var(--accent)':'#fff')+'">'+cond+'%</span></div></div>'+
+          '<div class="btn-row">'+
+            (!isActive ? '<button class="btn btn-select" onclick="selectCar('+car.id+')">ВЫБРАТЬ</button>' : '<button class="btn btn-select selected-mark" disabled>АКТИВНА</button>')+
+            '<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button>'+
+          '</div>'+
+        '</div></div>';
+  });
+}
+
+function renderShop(){
+  updateHeader();
+  const container=document.getElementById('shop-list');
+  container.innerHTML='';
+  carsDB.forEach(car=>{
+    const isOwned=state.ownedCars.includes(car.id);
+    const canAfford=state.coins>=car.price;
+    container.innerHTML += '<div class="car-card">'+
+        '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+
+          '<div class="tier-badge">'+car.tier+'</div>'+
+          '<div class="power-badge">'+car.power+' л.с.</div>'+
+        '</div>'+
+        '<div class="car-info-box">'+
+          '<div class="car-title">'+car.name+'</div>'+
+          '<div class="car-stats"><span>'+CAT_LABELS[car.cat]+'</span><span>'+(car.price===0?'Стартовая':fmt(car.price)+' 💰')+'</span></div>'+
+          '<div class="btn-row">'+
+            (isOwned ? '<button class="btn btn-buy" disabled>В ГАРАЖЕ</button>' : '<button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+car.id+')">КУПИТЬ</button>')+
+            '<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button>'+
+          '</div>'+
+        '</div></div>';
+  });
+}
+function buyCar(carId){
+  const car=carsDB.find(c=>c.id===carId);
+  if(state.ownedCars.includes(carId)) return;
+  if(state.coins<car.price){ showToast("Недостаточно денег"); return; }
+  state.coins-=car.price; state.stats.totalSpent+=car.price;
+  state.ownedCars.push(carId);
+  getFuel(carId); getCondition(carId); getUpg(carId);
+  showToast("🚗 Куплено: "+car.name);
+  updateHeader(); renderShop(); saveState();
+  checkAchievements();
+}
+function selectCar(carId){
+  state.activeCarId=carId;
+  showToast("✅ Активная машина изменена");
+  renderGarage(); saveState();
+}
+
+/* ==================== CAR DETAIL ==================== */
+function openDetail(carId){
+  state.detailTargetId=carId;
+  const car=carsDB.find(c=>c.id===carId);
+  const isOwned=state.ownedCars.includes(carId);
+  const eff=getEffectivePower(car);
+  const powerPct=Math.min(100, Math.round(eff/1500*100));
+  const fuel=getFuel(carId), cond=getCondition(carId);
+  let html = '<div class="detail-hero">'+carArtSVG(car)+'<div class="detail-hero-text"><h2>'+car.name+'</h2><div style="color:var(--text-muted);font-weight:800;font-size:12px;text-transform:uppercase;">'+car.tier+'</div></div></div>'+
+    '<div class="flavor-box">"'+car.flavor+'"</div>'+
+    '<div class="stat-row"><div class="stat-line"><span>Мощность</span><b>'+eff+' л.с.'+(eff!==car.power?' (баз. '+car.power+')':'')+'</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+powerPct+'%;background:var(--accent);"></div></div>'+
+    '<div class="stat-line" style="margin-top:8px;"><span>Класс</span><b>'+CAT_LABELS[car.cat]+'</b></div>'+
+    '<div class="stat-line"><span>Цена</span><b>'+(car.price===0?'Стартовая':fmt(car.price)+' 💰')+'</b></div></div>';
+
+  if(isOwned){
+    html += '<div class="resource-row">'+
+      '<div class="resource-box"><div class="resource-head"><span>⛽ Топливо</span><b>'+fuel+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+fuel+'%;background:var(--blue);"></div></div></div>'+
+      '<div class="resource-box"><div class="resource-head"><span>🔧 Состояние</span><b>'+cond+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+cond+'%;background:'+(cond<40?'var(--accent)':'var(--green)')+';"></div></div></div>'+
+    '</div>'+
+    '<div class="btn-row" style="max-width:520px;width:100%;margin-bottom:10px;">'+
+      '<button class="btn btn-ghost" onclick="refuelCar('+carId+')">ЗАПРАВИТЬ</button>'+
+      '<button class="btn btn-ghost" onclick="repairCar('+carId+')">РЕМОНТ</button>'+
+    '</div>'+
+    '<div class="list-container" style="max-width:520px;">'+
+      (state.activeCarId!==carId ? '<button class="btn btn-select" onclick="selectCar('+carId+')">СДЕЛАТЬ АКТИВНОЙ</button>' : '<button class="btn btn-select selected-mark" disabled>АКТИВНАЯ МАШИНА</button>')+
+      '<button class="btn btn-gold" onclick="openTune('+carId+')">🔧 ТЮНИНГ</button>'+
+    '</div>';
+  } else {
+    const canAfford = state.coins>=car.price;
+    html += '<div class="list-container" style="max-width:520px;"><button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+carId+');openDetail('+carId+')">'+(canAfford?'КУПИТЬ ЗА '+fmt(car.price)+' 💰':'НЕДОСТАТОЧНО СРЕДСТВ')+'</button></div>';
+  }
+  document.getElementById('detail-content').innerHTML = html;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-cardetail').classList.add('active');
+  document.getElementById('main-scroll').scrollTop=0;
+}
+function goBackFromDetail(){
+  if(state.ownedCars.includes(state.detailTargetId)) switchTab('garage'); else switchTab('shop');
+}
+
+/* ==================== TUNING ==================== */
+function openTune(carId){
+  state.tuneTargetId=carId;
+  const car=carsDB.find(c=>c.id===carId);
+  document.getElementById('tune-car-title').innerText = "Тюнинг: "+car.name;
+  const upg=getUpg(carId);
+  const container=document.getElementById('tune-list');
+  container.innerHTML='';
+  TUNE_TYPES.forEach(t=>{
+    const lvl=upg[t.key];
+    const maxed = lvl>=t.hpPerStage.length;
+    const price = maxed? 0 : tuneStagePrice(car,lvl);
+    const canAfford = state.coins>=price;
+    let dots='';
+    for(let i=0;i<t.hpPerStage.length;i++) dots+='<div class="dot '+(i<lvl?'filled':'')+'"></div>';
+    container.innerHTML += '<div class="tune-row">'+
+      '<div><div class="tune-name">'+t.icon+' '+t.name+' <span style="color:var(--text-muted);font-weight:700;font-size:10.5px;">Ст.'+lvl+'/'+t.hpPerStage.length+'</span></div>'+
+      '<div class="tune-desc">'+t.desc+'</div><div class="tune-level-dots">'+dots+'</div></div>'+
+      '<button class="tune-btn '+(maxed?'maxed':'')+'" '+(maxed||!canAfford?'disabled':'')+' onclick="upgradeTune('+carId+',\''+t.key+'\')">'+(maxed?'МАКС':fmt(price)+' 💰')+'</button>'+
+    '</div>';
+  });
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-tune').classList.add('active');
+  document.getElementById('main-scroll').scrollTop=0;
+}
+function upgradeTune(carId, key){
+  const car=carsDB.find(c=>c.id===carId);
+  const upg=getUpg(carId);
+  const t=TUNE_TYPES.find(x=>x.key===key);
+  if(upg[key]>=t.hpPerStage.length) return;
+  const price=tuneStagePrice(car,upg[key]);
+  if(state.coins<price){ showToast("Недостаточно денег"); return; }
+  state.coins-=price; state.stats.totalSpent+=price;
+  upg[key]++;
+  showToast("🔧 "+t.name+" улучшена до стадии "+upg[key]);
+  updateHeader(); openTune(carId); saveState();
+  checkAchievements();
+}
+
+/* ==================== DUEL SELECT ==================== */
+function renderOpponents(){
+  updateHeader();
+  const container=document.getElementById('opponent-list');
+  container.innerHTML='';
+  const car = carsDB.find(c=>c.id===state.activeCarId);
+  const myPower = car ? getEffectivePower(car) : 0;
+  const list = state.duelSub==='tour' ? tournamentsDB : opponentsDB;
+  if(!car){ container.innerHTML='<div class="no-car-msg">Сначала выберите активную машину в гараже.</div>'; return; }
+  list.forEach(opp=>{
+    const unlocked = state.level>=opp.unlockLevel;
+    if(!unlocked){
+      container.innerHTML += '<div class="opp-card" style="opacity:.55;">'+
+        '<div class="opp-head"><span class="opp-name">🔒 ???</span><span class="opp-power">Требуется LVL '+opp.unlockLevel+'</span></div>'+
+        '<div class="locked-tag">Заблокировано</div></div>';
+      return;
+    }
+    const winChance = Math.max(5, Math.min(95, Math.round(50 + (myPower-opp.power)/opp.power*100)));
+    const fee = entryFeeFor(opp);
+    container.innerHTML += '<div class="opp-card '+(opp.boss?'boss':'')+'">'+
+      '<div class="opp-head"><span class="opp-name">'+(opp.boss?'👑 ':'')+opp.name+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
+      (opp.boss?'<div class="boss-badge" style="position:static;display:inline-block;width:fit-content;">БОСС</div>':'')+
+      '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;">'+opp.taunt+'</div>'+
+      '<div class="odds-bar-bg"><div class="odds-win" style="width:'+winChance+'%"></div><div class="odds-lose" style="width:'+(100-winChance)+'%"></div></div>'+
+      '<div class="opp-foot"><span>Шанс победы: <b style="color:var(--green)">'+winChance+'%</b></span><span>Вход: <b>-'+fmt(fee)+'</b></span><span>Приз: <b>+'+fmt(opp.reward)+'</b></span></div>'+
+      '<button class="btn btn-select" onclick="prepareRace(\''+opp.id+'\', '+(state.duelSub==='tour')+')">К СТАРТУ</button>'+
+    '</div>';
+  });
+}
+
+let raceCtx=null;
+function prepareRace(oppId, isTour){
+  const list = isTour ? tournamentsDB : opponentsDB;
+  const opp = list.find(o=>String(o.id)===String(oppId));
+  const car = carsDB.find(c=>c.id===state.activeCarId);
+  if(!car || !opp) return;
+  const fee = entryFeeFor(opp);
+  const fuelCost = fuelCostFor(opp);
+  const fuel = getFuel(car.id);
+  raceCtx = { opp, isTour, fee, fuelCost };
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-race').classList.add('active');
+  document.getElementById('main-scroll').scrollTop=0;
+  const canAfford = state.coins>=fee;
+  const enoughFuel = fuel>=fuelCost;
+  const el=document.getElementById('race-content');
+  el.innerHTML = '<div class="pre-race-box">'+
+    '<div class="vs-banner">'+car.name+' <b>VS</b> '+opp.name+'</div>'+
+    '<div class="pre-race-line"><span>Вход в заезд</span><b>'+fmt(fee)+' 💰</b></div>'+
+    '<div class="pre-race-line"><span>Расход топлива</span><b>'+fuelCost+'% (у вас '+fuel+'%)</b></div>'+
+    '<div class="pre-race-line"><span>Награда за победу</span><b style="color:var(--gold)">+'+fmt(opp.reward)+' 💰</b></div>'+
+    '<div class="nitro-toggle" id="nitro-toggle" onclick="toggleNitroUse()"><div class="n-left">⚡ Нитро (заряды: '+state.nitro+')</div><div class="switch" id="nitro-switch"><div class="knob"></div></div></div>'+
+    '</div>'+
+    '<button class="big-btn" style="margin-top:14px;" '+(canAfford&&enoughFuel?'':'disabled')+' onclick="startRace()">'+(canAfford?(enoughFuel?'СТАРТ':'НЕДОСТАТОЧНО ТОПЛИВА'):'НЕДОСТАТОЧНО ДЕНЕГ')+'</button>'+
+    '<button class="btn btn-ghost" style="margin-top:8px;" onclick="switchTab(\'duel-select\')">Отмена</button>';
+  raceCtx.useNitro=false;
+}
+function toggleNitroUse(){
+  if(state.nitro<=0){ showToast("Нет зарядов нитро"); return; }
+  raceCtx.useNitro=!raceCtx.useNitro;
+  document.getElementById('nitro-toggle').classList.toggle('on', raceCtx.useNitro);
+  document.getElementById('nitro-switch').classList.toggle('on', raceCtx.useNitro);
+}
+function startRace(){
+  const car=carsDB.find(c=>c.id===state.activeCarId);
+  const opp = raceCtx.opp;
+  state.coins -= raceCtx.fee; state.stats.totalSpent += raceCtx.fee;
+  state.fuel[car.id] = Math.max(0, getFuel(car.id)-raceCtx.fuelCost);
+  if(raceCtx.useNitro){ state.nitro--; }
+  updateHeader();
+
+  const myPower = getEffectivePower(car);
+  let winChance = Math.max(5, Math.min(95, Math.round(50 + (myPower-opp.power)/opp.power*100)));
+  if(raceCtx.useNitro) winChance = Math.min(97, winChance+8);
+  raceCtx.winChance = winChance;
+  raceCtx.skillScore = 0;
+
+  const el=document.getElementById('race-content');
+  el.innerHTML = '<div class="countdown-box" id="countdown">3</div>';
+  let n=3;
+  const cd = setInterval(()=>{
+    n--;
+    const cdEl=document.getElementById('countdown');
+    if(!cdEl){ clearInterval(cd); return; }
+    if(n>0){ cdEl.innerText=n; }
+    else if(n===0){ cdEl.innerText='GO!'; }
+    else { clearInterval(cd); showShiftSequence(); }
+  },600);
+}
+function showShiftSequence(){
+  const el=document.getElementById('race-content');
+  raceCtx.shiftIndex=0; raceCtx.shiftTotal=4; raceCtx.shiftResults=[];
+  el.innerHTML = '<div class="shift-panel">'+
+    '<div class="shift-title">ПЕРЕКЛЮЧЕНИЕ '+(raceCtx.shiftIndex+1)+' / '+raceCtx.shiftTotal+'</div>'+
+    '<div class="shift-bar-bg"><div class="shift-zone" id="shift-zone"></div><div class="shift-marker" id="shift-marker"></div></div>'+
+    '<button class="big-btn" id="shift-btn" onclick="hitShift()">ПЕРЕКЛЮЧИТЬ</button>'+
+    '<div class="shift-feedback" id="shift-feedback"></div>'+
+    '<div class="shift-dots" id="shift-dots"></div>'+
+  '</div>';
+  runShiftRound();
+}
+function runShiftRound(){
+  const zoneStart = 30+Math.random()*25;
+  const zoneWidth = 16;
+  const zoneEl=document.getElementById('shift-zone');
+  zoneEl.style.left=zoneStart+'%'; zoneEl.style.width=zoneWidth+'%';
+  raceCtx.zoneStart=zoneStart; raceCtx.zoneEnd=zoneStart+zoneWidth;
+  raceCtx.markerPos=0; raceCtx.markerDir=1;
+  clearInterval(raceCtx.markerIv);
+  raceCtx.markerIv = setInterval(()=>{
+    const m=document.getElementById('shift-marker');
+    if(!m){ clearInterval(raceCtx.markerIv); return; }
+    raceCtx.markerPos += raceCtx.markerDir*3.2;
+    if(raceCtx.markerPos>=98){ raceCtx.markerPos=98; raceCtx.markerDir=-1; }
+    if(raceCtx.markerPos<=0){ raceCtx.markerPos=0; raceCtx.markerDir=1; }
+    m.style.left=raceCtx.markerPos+'%';
+  },16);
+}
+function hitShift(){
+  clearInterval(raceCtx.markerIv);
+  const pos=raceCtx.markerPos;
+  let quality, points, cls;
+  const mid=(raceCtx.zoneStart+raceCtx.zoneEnd)/2;
+  if(pos>=raceCtx.zoneStart && pos<=raceCtx.zoneEnd){
+    if(Math.abs(pos-mid)<3.5){ quality='ИДЕАЛЬНО!'; points=3; cls='p'; }
+    else { quality='ХОРОШО'; points=2; cls='g'; }
+  } else { quality='ПРОМАХ'; points=0; cls='m'; }
+  raceCtx.skillScore += points;
+  raceCtx.shiftResults.push(cls);
+  const fb=document.getElementById('shift-feedback');
+  fb.innerText=quality;
+  fb.style.color = cls==='p'?'var(--green)':cls==='g'?'var(--gold)':'var(--accent)';
+  let dotsHtml='';
+  raceCtx.shiftResults.forEach(c=>{ dotsHtml+='<div class="d '+c+'"></div>'; });
+  document.getElementById('shift-dots').innerHTML=dotsHtml;
+
+  raceCtx.shiftIndex++;
+  document.getElementById('shift-btn').disabled=true;
+  setTimeout(()=>{
+    if(raceCtx.shiftIndex>=raceCtx.shiftTotal){ showRaceAnimation(); }
+    else{
+      const titleEl=document.querySelector('.shift-title');
+      if(titleEl) titleEl.innerText='ПЕРЕКЛЮЧЕНИЕ '+(raceCtx.shiftIndex+1)+' / '+raceCtx.shiftTotal;
+      document.getElementById('shift-btn').disabled=false;
+      runShiftRound();
+    }
+  }, 550);
+}
+function showRaceAnimation(){
+  const el=document.getElementById('race-content');
+  el.innerHTML = '<div class="progress-track">'+
+    '<div class="racer-row-label"><span>ВЫ</span></div>'+
+    '<div class="racer-track"><div class="track-bg"></div><div class="track-fill player" id="player-fill-final" style="width:0%"></div><span class="finish-flag">🏁</span></div>'+
+    '<div class="racer-row-label"><span>СОПЕРНИК</span></div>'+
+    '<div class="racer-track"><div class="track-bg"></div><div class="track-fill ai" id="ai-fill-final" style="width:0%"></div><span class="finish-flag">🏁</span></div>'+
+  '</div>';
+  let winChance = raceCtx.winChance;
+  const skillBonus = raceCtx.skillScore*1.5;
+  winChance = Math.max(4, Math.min(97, winChance + skillBonus - 6));
+  const playerWins = Math.random()*100 < winChance;
+
+  let t=0;
+  const iv=setInterval(()=>{
+    t+=1;
+    const pf=document.getElementById('player-fill-final');
+    const af=document.getElementById('ai-fill-final');
+    if(!pf){ clearInterval(iv); return; }
+    const targetP = playerWins ? 96 : 70+Math.random()*15;
+    const targetA = playerWins ? 70+Math.random()*15 : 96;
+    const p = Math.min(targetP, t*6 + Math.random()*4);
+    const a = Math.min(targetA, t*5.6 + Math.random()*4);
+    pf.style.width=p+'%'; af.style.width=a+'%';
+    if(t>16){ clearInterval(iv); finishRace(playerWins, Math.round(winChance)); }
+  },90);
+}
+
+function finishRace(playerWins, winChance){
+  const car=carsDB.find(c=>c.id===state.activeCarId);
+  state.stats.races++;
+  let policeHtml='';
+  const policeChance = playerWins ? 0.20 : 0.10;
+  const gotPolice = Math.random() < policeChance;
+
+  const condLoss = 3 + (playerWins?0:2) + (gotPolice?3:0);
+  state.condition[car.id] = Math.max(0, getCondition(car.id)-condLoss);
+
+  let title, sub, rewardText, boxClass, xpGain;
+  if(playerWins){
+    state.stats.wins++;
+    const reward = raceCtx.opp.reward + Math.round(raceCtx.skillScore*1.2);
+    state.coins += reward;
+    state.stats.totalEarned += reward;
+    xpGain = raceCtx.opp.boss||raceCtx.isTour ? 40 : 16;
+    boxClass='win'; title="🏆 ПОБЕДА!"; sub="Твой шанс на победу был "+winChance+"%. Мастерство переключений сыграло роль.";
+    rewardText = "+"+fmt(reward)+" 💰";
+  } else {
+    state.stats.losses++;
+    const consolation = Math.round(raceCtx.opp.reward*0.05)+20;
+    state.coins += consolation;
+    state.stats.totalEarned += consolation;
+    xpGain = 4;
+    boxClass='lose'; title="💥 ПОРАЖЕНИЕ"; sub="Соперник оказался сильнее. Прокачай тачку или найди противника послабее.";
+    rewardText = "+"+fmt(consolation)+" 💰 (утешительный приз)";
+  }
+  addXP(xpGain);
+
+  if(gotPolice){
+    const fine = Math.round((state.coins)*(0.04+Math.random()*0.08))+50;
+    state.coins = Math.max(0, state.coins-fine);
+    state.stats.finesPaid += fine;
+    state.stats.finesCount++;
+    const lines = [
+      "«Документы и техпаспорт, пожалуйста.» — инспектор явно не в духе.",
+      "«Превышение скорости зафиксировано радаром.» Спорить бесполезно.",
+      "«Гонки на дорогах общего пользования запрещены, молодой человек.»",
+      "«Так-так, ещё один уличный гонщик. Штраф в кассу.»"
+    ];
+    policeHtml = '<div class="police-box">🚓 ДПС! '+lines[Math.floor(Math.random()*lines.length)]+'<br>Штраф: <b>-'+fmt(fine)+' 💰</b></div>';
+    if(state.stats.finesCount===1) setTimeout(()=>showToast("🏅 Достижение: Знакомство с ДПС"),400);
+  }
+
+  const el=document.getElementById('race-content');
+  el.innerHTML = '<div class="result-box '+boxClass+'">'+
+      '<div class="result-title">'+title+'</div>'+
+      '<div class="result-sub">'+sub+'</div>'+
+      '<div class="result-reward">'+rewardText+'</div>'+
+      '<div class="xp-gain-box">⭐ +'+xpGain+' опыта</div>'+
+      policeHtml+
+    '</div>'+
+    '<div class="list-container" style="margin-top:14px;">'+
+      '<button class="btn btn-select" onclick="switchTab(\'duel-select\')">К СПИСКУ СОПЕРНИКОВ</button>'+
+      '<button class="btn btn-ghost" onclick="switchTab(\'garage\')">В ГАРАЖ</button>'+
+    '</div>';
+  flashResult(el, playerWins);
+  updateHeader();
+  saveState();
+  checkAchievements();
+}
+
+/* ==================== JOBS ==================== */
+function renderJobs(){
+  updateHeader();
+  const container=document.getElementById('jobs-list');
+  container.innerHTML='';
+  const now=Date.now();
+  jobsDB.forEach(job=>{
+    const readyAt = state.jobCooldowns[job.id] || 0;
+    const remaining = Math.max(0, Math.ceil((readyAt-now)/1000));
+    const ready = remaining<=0;
+    container.innerHTML += '<div class="job-card">'+
+        '<div class="job-head"><span class="job-name">'+job.name+'</span><span class="job-reward">+'+fmt(job.reward)+' 💰</span></div>'+
+        '<div class="job-desc">'+job.desc+'</div>'+
+        '<button class="job-btn" id="job-btn-'+job.id+'" onclick="doJob(\''+job.id+'\')" '+(ready?'':'disabled')+'>'+(ready ? 'ВЫПОЛНИТЬ' : 'Отдых: '+remaining+'с')+'</button>'+
+      '</div>';
+  });
+}
+function doJob(jobId){
+  const job=jobsDB.find(j=>j.id===jobId);
+  const now=Date.now();
+  const readyAt=state.jobCooldowns[jobId]||0;
+  if(now<readyAt) return;
+  state.coins+=job.reward;
+  state.stats.totalEarned+=job.reward;
+  addXP(job.xp||5);
+  state.jobCooldowns[jobId]=now+job.cooldown*1000;
+  showToast("💼 "+job.name+": +"+fmt(job.reward)+" 💰");
+  updateHeader();
+  renderJobs();
+  saveState();
+}
+setInterval(()=>{
+  if(document.getElementById('screen-jobs').classList.contains('active')) renderJobs();
+},1000);
+
+/* ==================== CASINO HUB ==================== */
+function renderCasinoHub(){
+  updateHeader();
+  const c = document.getElementById('casino-hub-list');
+  c.innerHTML =
+    '<div class="casino-card" onclick="switchTab(\'blackjack\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="12" height="17" rx="2"/><rect x="10" y="2" width="12" height="17" rx="2" fill="#191922"/></svg></div><div class="casino-info"><b>Блэкджек 21</b><span>Обыграй дилера, набери 21</span></div></div>'+
+    '<div class="casino-card" onclick="switchTab(\'roulette\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></div><div class="casino-info"><b>Рулетка</b><span>Красное, чёрное или число</span></div></div>'+
+    '<div class="casino-card" onclick="switchTab(\'slots\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5M16 4v5"/></svg></div><div class="casino-info"><b>Слоты «777»</b><span>Крути барабаны на джекпот</span></div></div>'+
+    '<div class="casino-card" onclick="switchTab(\'dice\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></div><div class="casino-info"><b>Кости</b><span>Загадай шанс — забери выплату</span></div></div>'+
+    '<div style="width:100%;max-width:520px;text-align:center;color:var(--text-muted);font-size:11px;font-weight:700;margin-top:6px;">Всего поставлено: '+fmt(state.stats.casinoWagered)+' 💰 · Выиграно: '+fmt(state.stats.casinoWon)+' 💰</div>';
+}
+function clampBet(input, min){
+  let v = parseInt(input.value)||0;
+  if(v<min) v=min;
+  if(v>state.coins) v=state.coins;
+  input.value=v;
+  return v;
+}
+
+/* ==================== BLACKJACK ==================== */
+let bj = null;
+function bjAdjustBet(delta){ const i=document.getElementById('bj-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function bjMaxBet(){ document.getElementById('bj-bet-input').value=state.coins; clampBet(document.getElementById('bj-bet-input'),10); }
+function bjNewDeck(){
+  const suits=['♠','♥','♦','♣']; const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  let d=[];
+  suits.forEach(s=>ranks.forEach(r=>d.push({r,s})));
+  for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
+  return d;
+}
+function bjCardValue(hand){
+  let total=0, aces=0;
+  hand.forEach(c=>{
+    if(c.r==='A'){ total+=11; aces++; }
+    else if(['J','Q','K'].includes(c.r)) total+=10;
+    else total+=parseInt(c.r);
+  });
+  while(total>21 && aces>0){ total-=10; aces--; }
+  return total;
+}
+function bjRenderCard(c, hidden){
+  if(hidden) return '<div class="card-el back"></div>';
+  const red = c.s==='♥'||c.s==='♦';
+  return '<div class="card-el '+(red?'red':'black')+'">'+c.r+'<br>'+c.s+'</div>';
+}
+function bjRenderHands(hideDealer){
+  document.getElementById('bj-player-cards').innerHTML = bj.player.map(c=>bjRenderCard(c,false)).join('');
+  document.getElementById('bj-dealer-cards').innerHTML = bj.dealer.map((c,idx)=>bjRenderCard(c, hideDealer && idx===1)).join('');
+  document.getElementById('bj-player-score').innerText = bjCardValue(bj.player);
+  document.getElementById('bj-dealer-score').innerText = hideDealer ? '?' : bjCardValue(bj.dealer);
+}
+function bjDeal(){
+  const bet = clampBet(document.getElementById('bj-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const deck=bjNewDeck();
+  bj = { deck, bet, player:[deck.pop(),deck.pop()], dealer:[deck.pop(),deck.pop()], done:false, doubled:false };
+  document.getElementById('bj-message').innerText='';
+  document.getElementById('bj-bet-panel').style.display='none';
+  const ap=document.getElementById('bj-action-panel');
+  ap.style.display='flex';
+  const canDouble = state.coins>=bet;
+  ap.innerHTML = '<button class="btn btn-select" onclick="bjHit()">ЕЩЁ</button>'+
+    '<button class="btn btn-ghost" onclick="bjStand()">ХВАТИТ</button>'+
+    '<button class="btn btn-gold" '+(canDouble?'':'disabled')+' onclick="bjDouble()">УДВОИТЬ</button>';
+  bjRenderHands(true);
+  if(bjCardValue(bj.player)===21){ bjStand(); }
+}
+function bjHit(){
+  if(bj.done) return;
+  bj.player.push(bj.deck.pop());
+  bjRenderHands(true);
+  if(bjCardValue(bj.player)>21){ bjEnd('bust'); }
+  else if(bjCardValue(bj.player)===21){ bjStand(); }
+}
+function bjDouble(){
+  if(bj.done || state.coins<bj.bet) return;
+  state.coins-=bj.bet; state.stats.casinoWagered+=bj.bet; updateHeader();
+  bj.bet*=2; bj.doubled=true;
+  bj.player.push(bj.deck.pop());
+  bjRenderHands(true);
+  if(bjCardValue(bj.player)>21){ bjEnd('bust'); } else { bjStand(); }
+}
+function bjStand(){
+  if(bj.done) return;
+  while(bjCardValue(bj.dealer)<17){ bj.dealer.push(bj.deck.pop()); }
+  bjRenderHands(false);
+  const p=bjCardValue(bj.player), d=bjCardValue(bj.dealer);
+  if(d>21 || p>d) bjEnd('win');
+  else if(p===d) bjEnd('push');
+  else bjEnd('lose');
+}
+function bjEnd(result){
+  bj.done=true;
+  bjRenderHands(false);
+  const msg=document.getElementById('bj-message');
+  const isBlackjack = bj.player.length===2 && bjCardValue(bj.player)===21;
+  let payout=0, text='';
+  if(result==='win' || result==='bust'){
+    if(result==='bust'){ text='💥 ПЕРЕБОР — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
+    else {
+      payout = isBlackjack ? Math.round(bj.bet*2.5) : bj.bet*2;
+      text = isBlackjack ? '🃏 БЛЭКДЖЕК! +'+fmt(payout-bj.bet)+' 💰' : '🏆 ПОБЕДА! +'+fmt(payout-bj.bet)+' 💰';
+      msg.style.color='var(--green)';
+    }
+  } else if(result==='push'){ payout=bj.bet; text='🤝 НИЧЬЯ — ставка возвращена'; msg.style.color='var(--text-muted)'; }
+  else { text='💥 ДИЛЕР СИЛЬНЕЕ — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
+  msg.innerText=text;
+  if(payout>0){ state.coins+=payout; state.stats.casinoWon+=Math.max(0,payout-bj.bet); }
+  updateHeader();
+  flashResult(document.querySelector('#screen-blackjack .game-table'), payout>bj.bet || payout===bj.bet);
+  document.getElementById('bj-action-panel').style.display='none';
+  document.getElementById('bj-bet-panel').style.display='block';
+  saveState(); checkAchievements();
+}
+
+/* ==================== ROULETTE ==================== */
+const RLT_RED = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+let rltSelection = null;
+function rltAdjustBet(delta){ const i=document.getElementById('rlt-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function rltMaxBet(){ document.getElementById('rlt-bet-input').value=state.coins; clampBet(document.getElementById('rlt-bet-input'),10); }
+function rltInit(){
+  const grid=document.getElementById('rlt-grid');
+  let html='';
+  for(let n=0;n<=36;n++){
+    const color = n===0?'green':(RLT_RED.includes(n)?'red':'black');
+    html += '<div class="rlt-num '+color+'" onclick="rltSelectNumber('+n+')" id="rlt-n-'+n+'">'+n+'</div>';
+  }
+  grid.innerHTML=html;
+  const outside=document.getElementById('rlt-outside');
+  outside.innerHTML = ['red:Красное','black:Чёрное','even:Чёт','odd:Нечёт','low:1-18','high:19-36'].map(x=>{
+    const [key,label]=x.split(':');
+    return '<div onclick="rltSelectOutside(\''+key+'\')" id="rlt-o-'+key+'">'+label+'</div>';
+  }).join('');
+}
+function rltClearSelection(){
+  document.querySelectorAll('.rlt-num').forEach(e=>e.classList.remove('selected'));
+  document.querySelectorAll('.rlt-outside div').forEach(e=>e.classList.remove('selected'));
+}
+function rltSelectNumber(n){ rltClearSelection(); rltSelection={type:'number', value:n}; document.getElementById('rlt-n-'+n).classList.add('selected'); }
+function rltSelectOutside(key){ rltClearSelection(); rltSelection={type:'outside', value:key}; document.getElementById('rlt-o-'+key).classList.add('selected'); }
+function rltSpin(){
+  if(!rltSelection){ showToast("Выберите ставку: число, цвет или диапазон"); return; }
+  const bet = clampBet(document.getElementById('rlt-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const resEl=document.getElementById('rlt-result');
+  resEl.style.background='#1a1a24'; resEl.innerText='...';
+  setTimeout(()=>{
+    const n = Math.floor(Math.random()*37);
+    const color = n===0?'green':(RLT_RED.includes(n)?'red':'black');
+    resEl.innerText=n;
+    resEl.style.background = color==='green'?'var(--green)':(color==='red'?'#b91c1c':'#1a1a24');
+    let win=false, mult=0;
+    if(rltSelection.type==='number' && rltSelection.value===n){ win=true; mult=35; }
+    else if(rltSelection.type==='outside'){
+      if(rltSelection.value==='red' && color==='red'){ win=true; mult=1; }
+      else if(rltSelection.value==='black' && color==='black'){ win=true; mult=1; }
+      else if(rltSelection.value==='even' && n!==0 && n%2===0){ win=true; mult=1; }
+      else if(rltSelection.value==='odd' && n%2===1){ win=true; mult=1; }
+      else if(rltSelection.value==='low' && n>=1 && n<=18){ win=true; mult=1; }
+      else if(rltSelection.value==='high' && n>=19 && n<=36){ win=true; mult=1; }
+    }
+    const table = document.querySelector('#screen-roulette');
+    if(win){
+      const payout = bet + bet*mult;
+      state.coins+=payout; state.stats.casinoWon += payout-bet;
+      showToast("🎉 Выигрыш! +"+fmt(payout-bet)+" 💰");
+      flashResult(table, true);
+    } else {
+      showToast("😔 Не повезло. Число: "+n);
+      flashResult(table, false);
+    }
+    updateHeader(); saveState(); checkAchievements();
+  }, 900);
+}
+
+/* ==================== SLOTS ==================== */
+const SLOT_SYMBOLS = ['🍒','🍋','🔔','⭐','💎','7️⃣'];
+const SLOT_WEIGHTS = [30,26,20,13,8,3];
+function slotsAdjustBet(delta){ const i=document.getElementById('slots-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function slotsMaxBet(){ document.getElementById('slots-bet-input').value=state.coins; clampBet(document.getElementById('slots-bet-input'),10); }
+function weightedSymbol(){
+  const total = SLOT_WEIGHTS.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<SLOT_SYMBOLS.length;i++){ if(r<SLOT_WEIGHTS[i]) return SLOT_SYMBOLS[i]; r-=SLOT_WEIGHTS[i]; }
+  return SLOT_SYMBOLS[0];
+}
+const SLOT_PAYOUTS = {'🍒':3,'🍋':4,'🔔':6,'⭐':10,'💎':20,'7️⃣':50};
+function slotsSpin(){
+  const bet = clampBet(document.getElementById('slots-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const reels=[document.getElementById('reel0'),document.getElementById('reel1'),document.getElementById('reel2')];
+  reels.forEach(r=>r.classList.add('spin'));
+  document.getElementById('slots-message').innerText='';
+  let ticks=0;
+  const iv=setInterval(()=>{
+    reels.forEach(r=>r.innerText=weightedSymbol());
+    ticks++;
+    if(ticks>12){
+      clearInterval(iv);
+      const final=[weightedSymbol(),weightedSymbol(),weightedSymbol()];
+      reels.forEach((r,i)=>{ r.innerText=final[i]; r.classList.remove('spin'); });
+      let payout=0, msg='';
+      if(final[0]===final[1] && final[1]===final[2]){
+        payout = bet*SLOT_PAYOUTS[final[0]];
+        msg = '🎰 ДЖЕКПОТ! '+final[0]+final[0]+final[0]+' — x'+SLOT_PAYOUTS[final[0]];
+      } else if(final[0]===final[1] || final[1]===final[2] || final[0]===final[2]){
+        payout = Math.round(bet*1.5);
+        msg = '✨ Пара совпала — небольшой выигрыш';
+      } else { msg='Не повезло, крутите ещё'; }
+      const table=document.querySelector('#screen-slots');
+      if(payout>0){ state.coins+=payout; state.stats.casinoWon+=payout-bet; flashResult(table,true); }
+      else { flashResult(table,false); }
+      document.getElementById('slots-message').innerText=msg;
+      document.getElementById('slots-message').style.color = payout>0?'var(--green)':'var(--text-muted)';
+      updateHeader(); saveState(); checkAchievements();
+    }
+  },80);
+}
+
+/* ==================== DICE ==================== */
+function diceUpdate(){
+  const target = parseInt(document.getElementById('dice-slider').value);
+  document.getElementById('dice-target').innerText = target;
+  const chance = target-1;
+  const mult = (97/chance).toFixed(2);
+  document.getElementById('dice-chance').innerText = chance+'%';
+  document.getElementById('dice-mult').innerText = 'x'+mult;
+}
+function diceAdjustBet(delta){ const i=document.getElementById('dice-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function diceMaxBet(){ document.getElementById('dice-bet-input').value=state.coins; clampBet(document.getElementById('dice-bet-input'),10); }
+function diceRoll(){
+  const bet = clampBet(document.getElementById('dice-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  const target = parseInt(document.getElementById('dice-slider').value);
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const resEl=document.getElementById('dice-result');
+  resEl.innerText='...'; resEl.style.color='var(--text-muted)';
+  setTimeout(()=>{
+    const roll = Math.floor(Math.random()*100)+1;
+    resEl.innerText=roll;
+    const win = roll<target;
+    const table=document.querySelector('#screen-dice');
+    if(win){
+      const mult = 97/(target-1);
+      const payout = Math.round(bet*mult);
+      state.coins+=payout; state.stats.casinoWon+=payout-bet;
+      resEl.style.color='var(--green)';
+      showToast("🎲 Выигрыш! +"+fmt(payout-bet)+" 💰");
+      flashResult(table,true);
+    } else {
+      resEl.style.color='var(--accent)';
+      showToast("🎲 Мимо. Выпало: "+roll);
+      flashResult(table,false);
+    }
+    updateHeader(); saveState(); checkAchievements();
+  }, 500);
+}
+
+/* ==================== ACHIEVEMENTS ==================== */
+const achievementsDB = [
+  { id:'first_win', name:'Первая кровь', desc:'Выиграй свою первую дуэль', icon:'🏆', reward:100, check:s=>s.stats.wins>=1 },
+  { id:'ten_wins', name:'Ветеран трассы', desc:'Одержи 10 побед', icon:'🥇', reward:500, check:s=>s.stats.wins>=10 },
+  { id:'five_cars', name:'Коллекционер', desc:'Владей 5 машинами одновременно', icon:'🚘', reward:400, check:s=>s.ownedCars.length>=5 },
+  { id:'all_cars', name:'Весь гараж синдиката', desc:'Собери все машины в игре', icon:'🏁', reward:5000, check:s=>s.ownedCars.length>=27 },
+  { id:'lvl10', name:'Авторитет района', desc:'Достигни 10 уровня', icon:'⭐', reward:600, check:s=>s.level>=10 },
+  { id:'first_fine', name:'Знакомство с ДПС', desc:'Получи первый штраф от полиции', icon:'🚓', reward:50, check:s=>s.stats.finesCount>=1 },
+  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'🃏', reward:150, check:s=>s.stats.casinoWon>0 && document.getElementById('bj-message') },
+  { id:'max_tune', name:'Гараж мечты', desc:'Прокачай тюнинг любой машины до максимума во всех категориях', icon:'🔧', reward:800, check:s=>Object.values(s.upgrades).some(u=>u && TUNE_TYPES.every(t=>u[t.key]>=t.hpPerStage.length)) },
+  { id:'earn50k', name:'Барон подполья', desc:'Заработай суммарно 50 000 💰', icon:'💰', reward:1000, check:s=>s.stats.totalEarned>=50000 },
+  { id:'daily7', name:'Верный синдикату', desc:'Забирай ежедневную награду 7 дней подряд', icon:'📅', reward:700, check:s=>s.dailyStreak>=7 },
+  { id:'secret_car', name:'Тень подполья', desc:'Стань владельцем мифической машины', icon:'👻', reward:1500, check:s=>s.ownedCars.includes(26)||s.ownedCars.includes(27) },
+  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'👑', reward:2000, check:s=>s.stats.wins>0 && s.level>=11 }
+];
+function checkAchievements(){
+  let any=false;
+  achievementsDB.forEach(a=>{
+    if(state.achievements[a.id]) return;
+    let passed=false;
+    try{ passed = a.check(state); }catch(e){ passed=false; }
+    if(passed){
+      state.achievements[a.id]=true;
+      state.coins += a.reward;
+      showToast('🏅 Достижение: '+a.name+' (+'+fmt(a.reward)+' 💰)');
+      any=true;
+    }
+  });
+  if(any){ updateHeader(); saveState(); }
+  const sub=document.getElementById('ach-progress-sub');
+  if(sub) sub.innerText = Object.keys(state.achievements).length+'/'+achievementsDB.length;
+}
+function renderAchievements(){
+  const c=document.getElementById('ach-list');
+  c.innerHTML='';
+  achievementsDB.forEach(a=>{
+    const done = !!state.achievements[a.id];
+    c.innerHTML += '<div class="ach-card '+(done?'done':'')+'">'+
+      '<div class="ach-ic">'+a.icon+'</div>'+
+      '<div class="ach-body"><b>'+a.name+'</b><span>'+a.desc+'</span></div>'+
+      '<div class="ach-reward">'+(done?'✅':'+'+fmt(a.reward))+'</div>'+
+    '</div>';
+  });
+}
+
+/* ==================== CASES ==================== */
+const casesDB = [
+  { id:'bronze', name:'Бронзовый кейс', icon:'🥉', price:300, desc:'Немного монет или заряд нитро' },
+  { id:'silver', name:'Серебряный кейс', icon:'🥈', price:1200, desc:'Хорошая пачка денег и шанс на нитро' },
+  { id:'gold', name:'Золотой кейс', icon:'🥇', price:4000, desc:'Крупный куш и редкий шанс на мифическую машину' }
+];
+function renderCases(){
+  const c=document.getElementById('cases-list');
+  c.innerHTML='';
+  casesDB.forEach(cs=>{
+    c.innerHTML += '<div class="case-card"><div class="case-ic">'+cs.icon+'</div><div class="case-name">'+cs.name+'</div><div class="case-desc">'+cs.desc+'</div>'+
+      '<button class="btn btn-gold" '+(state.coins<cs.price?'disabled':'')+' onclick="openCase(\''+cs.id+'\')">ОТКРЫТЬ ЗА '+fmt(cs.price)+' 💰</button></div>';
+  });
+}
+function openCase(caseId){
+  const cs = casesDB.find(c=>c.id===caseId);
+  if(state.coins<cs.price){ showToast("Недостаточно денег"); return; }
+  state.coins-=cs.price; state.stats.totalSpent+=cs.price; state.stats.casesOpened++;
+  const r = Math.random();
+  let resultMsg='';
+  if(caseId==='bronze'){
+    if(r<0.6){ const c=Math.round(cs.price*(0.5+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.9){ state.nitro+=1; resultMsg='+1 заряд нитро ⚡'; }
+    else { const c=Math.round(cs.price*2.5); state.coins+=c; resultMsg='Удача! +'+fmt(c)+' 💰'; }
+  } else if(caseId==='silver'){
+    if(r<0.5){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.85){ state.nitro+=2; resultMsg='+2 заряда нитро ⚡'; }
+    else { const c=Math.round(cs.price*3); state.coins+=c; resultMsg='Крупная удача! +'+fmt(c)+' 💰'; }
+  } else {
+    if(r<0.45){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.8){ state.nitro+=3; resultMsg='+3 заряда нитро ⚡'; }
+    else if(r<0.985){ const c=Math.round(cs.price*3.5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+    else {
+      const secretIds=[26,27].filter(id=>!state.ownedCars.includes(id));
+      if(secretIds.length>0){
+        const id=secretIds[Math.floor(Math.random()*secretIds.length)];
+        state.ownedCars.push(id);
+        resultMsg='🌟 ЛЕГЕНДАРНЫЙ ДРОП! Машина "'+carsDB.find(c=>c.id===id).name+'" теперь ваша!';
+      } else { const c=Math.round(cs.price*5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+    }
+  }
+  showToast('🎁 '+resultMsg);
+  updateHeader(); renderCases(); saveState(); checkAchievements();
+}
+
+/* ==================== LEADERBOARD ==================== */
+const LB_BOTS = [
+  {name:'Барон трассы Вадим', val:184000},{name:'Легенда подполья Дариан', val:142500},
+  {name:'Финалист «Полночь»', val:98700},{name:'Августина', val:61200},
+  {name:'Тень', val:45300},{name:'Толян с раёна', val:22100},
+  {name:'Ночной Гонщик Феникс', val:15400},{name:'Дворовый Стас', val:6200}
+];
+function renderLeaderboard(){
+  const c=document.getElementById('lb-list');
+  const rows = LB_BOTS.map(b=>({name:b.name, val:b.val, me:false}));
+  rows.push({name: state.playerName+' (вы)', val: state.stats.totalEarned, me:true});
+  rows.sort((a,b)=>b.val-a.val);
+  c.innerHTML='';
+  rows.forEach((r,i)=>{
+    const rankCls = i===0?'top1':i===1?'top2':i===2?'top3':'';
+    c.innerHTML += '<div class="lb-row '+(r.me?'me':'')+'"><div class="lb-rank '+rankCls+'">#'+(i+1)+'</div><div class="lb-name">'+r.name+'</div><div class="lb-val">'+fmt(r.val)+' 💰</div></div>';
+  });
+}
+
+/* ==================== SETTINGS ==================== */
+function renderSettings(){
+  document.getElementById('set-sound').classList.toggle('on', state.settings.sound);
+  document.getElementById('set-anim').classList.toggle('on', state.settings.animations);
+  const el = document.getElementById('last-saved-text');
+  if(el) el.innerText = state.lastSaved ? new Date(state.lastSaved).toLocaleTimeString('ru-RU') : '—';
+}
+function toggleSetting(key){
+  state.settings[key] = !state.settings[key];
+  renderSettings(); saveState();
+}
+
+/* ==================== DAILY REWARD ==================== */
+const DAILY_REWARDS = [150,200,300,400,600,800,1200];
+function checkDailyEligible(){
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  return state.lastDailyClaim===0 || hours>=20;
+}
+function openDailyModal(force){
+  if(!force && !checkDailyEligible()) return;
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  const eligible = state.lastDailyClaim===0 || hours>=20;
+  const missedStreak = state.lastDailyClaim!==0 && hours>48;
+  const dayIndex = missedStreak ? 0 : (state.dailyStreak % 7);
+  let strip='';
+  for(let i=0;i<7;i++){
+    const claimed = i<dayIndex;
+    const today = i===dayIndex;
+    strip += '<div class="daily-day '+(claimed?'claimed':'')+' '+(today?'today':'')+'">Д'+(i+1)+'<br>'+DAILY_REWARDS[i]+'</div>';
+  }
+  const root=document.getElementById('daily-modal-root');
+  root.innerHTML = '<div class="modal-overlay" id="daily-overlay"><div class="modal-box">'+
+    '<div style="font-size:40px;">📅</div>'+
+    '<div style="font-size:17px;font-weight:900;margin:8px 0;">Ежедневная награда</div>'+
+    '<div style="color:var(--text-muted);font-size:12px;font-weight:700;">День '+(dayIndex+1)+' из 7</div>'+
+    '<div class="daily-strip">'+strip+'</div>'+
+    (eligible ? '<button class="btn btn-gold" onclick="claimDaily('+dayIndex+')">ЗАБРАТЬ +'+fmt(DAILY_REWARDS[dayIndex])+' 💰</button>'
+              : '<div style="color:var(--text-muted);font-size:12px;font-weight:700;margin-bottom:8px;">Уже забрано сегодня — заходи позже</div>')+
+    '<button class="btn btn-ghost" style="margin-top:8px;" onclick="closeDailyModal()">Закрыть</button>'+
+  '</div></div>';
+}
+function claimDaily(dayIndex){
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  const missedStreak = state.lastDailyClaim!==0 && hours>48;
+  state.dailyStreak = missedStreak ? 1 : state.dailyStreak+1;
+  state.coins += DAILY_REWARDS[dayIndex];
+  state.lastDailyClaim = now;
+  showToast('📅 Награда дня: +'+fmt(DAILY_REWARDS[dayIndex])+' 💰');
+  updateHeader(); closeDailyModal(); saveState(); checkAchievements();
+  const sub=document.getElementById('daily-hub-sub'); if(sub) sub.innerText='Уже забрано';
+}
+function closeDailyModal(){ document.getElementById('daily-modal-root').innerHTML=''; }
+
+/* ==================== PROFILE ==================== */
+function renderProfile(){
+  updateHeader();
+  updateAvatarUI();
+  document.getElementById('profile-name').innerText = state.playerName;
+  document.getElementById('profile-lvl').innerText = state.level;
+  document.getElementById('p-balance').innerText = fmt(state.coins);
+  document.getElementById('p-cars').innerText = state.ownedCars.length;
+  document.getElementById('p-races').innerText = state.stats.races;
+  const wr = state.stats.races>0 ? Math.round(state.stats.wins/state.stats.races*100) : 0;
+  document.getElementById('p-winrate').innerText = wr+"%";
+  document.getElementById('p-wins').innerText = state.stats.wins;
+  document.getElementById('p-losses').innerText = state.stats.losses;
+  document.getElementById('p-earned').innerText = fmt(state.stats.totalEarned);
+  document.getElementById('p-fines').innerText = state.stats.finesCount;
+  const need = xpNeeded(state.level);
+  document.getElementById('xp-text').innerText = state.xp+'/'+need;
+  document.getElementById('xp-fill').style.width = Math.round(state.xp/need*100)+'%';
+  document.getElementById('ach-progress-sub').innerText = Object.keys(state.achievements).length+'/'+achievementsDB.length;
+  document.getElementById('hub-nitro-count').innerText = state.nitro;
+  document.getElementById('daily-hub-sub').innerText = checkDailyEligible() ? 'Забрать!' : 'Уже забрано';
+}
+
+/* ==================== INIT ==================== */
+loadState();
+initTelegram();
+rltInit();
+diceUpdate();
+updateHeader();
+updateAvatarUI();
+renderGarage();
+setTimeout(()=>{ if(checkDailyEligible()) openDailyModal(true); }, 500);
+setInterval(saveState, 20000);
+</script>
+</body>
+</html>
