@@ -2,8 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AutoSyndicate: Underground</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070807">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://jkmspwpfbebynwubykdf.supabase.co wss://jkmspwpfbebynwubykdf.supabase.co https://telegram.org; font-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self';">
+<title>AutoSyndicate: Carbon District</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
@@ -401,13 +404,25 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 .analog-gauge{background:radial-gradient(circle at 50% 45%,#252631 0,#111219 48%,#07080b 72%);border:1px solid #3a3b49;border-radius:18px;padding:10px;position:relative;min-height:175px;overflow:hidden;box-shadow:inset 0 0 28px #000,0 8px 24px #0008;}
 .gauge-caption{text-align:center;font-size:8px;letter-spacing:1.5px;color:#9da1ad;font-weight:1000;}
 .dial{width:min(100%,180px);aspect-ratio:1;margin:2px auto 0;border-radius:50%;position:relative;background:radial-gradient(circle,#151720 0 57%,#08090c 58% 100%);border:3px solid #30313b;box-shadow:inset 0 0 18px #000;overflow:hidden;}
-.dial:before{content:'';position:absolute;inset:8px;border-radius:50%;opacity:.95;background:conic-gradient(from 218deg,transparent 0deg var(--yellow-start,180deg),rgba(245,200,91,.92) var(--yellow-start,180deg) var(--green-start,185deg),rgba(34,197,94,.98) var(--green-start,185deg) var(--green-end,195deg),rgba(245,200,91,.92) var(--green-end,195deg) var(--yellow-end,200deg),transparent var(--yellow-end,200deg) 360deg);mask:radial-gradient(circle,transparent 0 76%,#000 77% 84%,transparent 85%);-webkit-mask:radial-gradient(circle,transparent 0 76%,#000 77% 84%,transparent 85%);pointer-events:none;}
+.dial:before{content:'';position:absolute;inset:8px;border-radius:50%;opacity:.95;background:conic-gradient(from 228deg,transparent 0deg var(--yellow-start,180deg),rgba(245,200,91,.92) var(--yellow-start,180deg) var(--green-start,185deg),rgba(34,197,94,.98) var(--green-start,185deg) var(--green-end,195deg),rgba(245,200,91,.92) var(--green-end,195deg) var(--yellow-end,200deg),transparent var(--yellow-end,200deg) 360deg);mask:radial-gradient(circle,transparent 0 76%,#000 77% 84%,transparent 85%);-webkit-mask:radial-gradient(circle,transparent 0 76%,#000 77% 84%,transparent 85%);pointer-events:none;}
 .dial-ticks{position:absolute;inset:14px;border-radius:50%;background:repeating-conic-gradient(from 218deg,rgba(255,255,255,.8) 0deg 1deg,transparent 1deg 13deg);mask:radial-gradient(circle,transparent 0 68%,#000 69% 74%,transparent 75%);-webkit-mask:radial-gradient(circle,transparent 0 68%,#000 69% 74%,transparent 75%);opacity:.65;}
 .dial-needle{position:absolute;left:50%;bottom:50%;width:3px;height:42%;background:#f5c85b;border-radius:4px;transform-origin:50% 100%;transform:rotate(-132deg);box-shadow:0 0 10px #f5c85b;transition:none;will-change:transform;z-index:4;}
 .speed-needle{background:#fff;box-shadow:0 0 10px #fff;}
 .dial-hub{position:absolute;left:50%;top:50%;width:12px;height:12px;transform:translate(-50%,-50%);border-radius:50%;background:#b7bac5;border:3px solid #242631;z-index:5;}
 .gauge-center{position:absolute;left:50%;top:59%;transform:translate(-50%,-50%);text-align:center;z-index:3;text-shadow:0 2px 5px #000;white-space:nowrap;}
 .gauge-center b{display:block;font-size:24px;line-height:1;font-variant-numeric:tabular-nums;}
+
+.gauge-value-below{
+  top:92%;
+  background:rgba(8,9,12,.88);
+  border:1px solid #30313b;
+  border-radius:9px;
+  padding:4px 10px 3px;
+  min-width:58px;
+}
+.gauge-value-below b{font-size:16px;}
+.gauge-value-below span{font-size:6px;margin-top:2px;}
+.speed3 .gauge-value-below{top:92%;}
 .gauge-center span{display:block;font-size:7px;color:#a8abb6;font-weight:1000;letter-spacing:1px;margin-top:4px;}
 .gauge-scale{display:flex;justify-content:space-between;padding:0 10px;margin-top:-5px;color:#888c98;font-size:7px;font-weight:1000;}
 .gear3{position:absolute;right:14%;top:14%;font-size:21px;font-weight:1000;color:#f5c85b;z-index:6;text-shadow:0 0 10px #f5c85b88;}
@@ -431,6 +446,11 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 .launch-btn{padding:12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--panel-2);color:#fff;font-weight:900;cursor:pointer;}
 .launch-btn.hard{border-color:#8a3949;background:linear-gradient(180deg,#3c1c25,#201117);}
 .launch-btn.safe{border-color:#2c6d55;background:linear-gradient(180deg,#18392d,#12251e);}
+
+.shift-zone-legend{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:8px;}
+.shift-zone-chip{font-size:8px;font-weight:1000;letter-spacing:.5px;border-radius:999px;padding:4px 8px;border:1px solid;}
+.shift-zone-chip.yellow{color:#f5c85b;border-color:#8b6d24;background:#2a2110;}
+.shift-zone-chip.green{color:#22c55e;border-color:#1d7a47;background:#10261a;}
 .shift-mini{font-size:10px;color:var(--text-muted);text-align:center;font-weight:800;}
 .public-profile{width:min(94vw,420px);background:linear-gradient(145deg,#17171e,#0d0d12);border:1px solid #343444;border-radius:20px;padding:18px;box-shadow:0 25px 80px #000b;animation:moneyIn .35s ease-out;}
 .public-profile .pp-head{display:flex;gap:12px;align-items:center;margin-bottom:15px;}
@@ -455,7 +475,11 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 .player-lb-cars{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .player-lb-car{font-size:8px;padding:3px 6px;border-radius:6px;background:#101018;border:1px solid #252531;color:#cbd5e1}
 
+
+/* Плавность стрелок приборов: физические значения не меняются, сглаживается только визуал. */
+.dial-needle{transition:transform .08s linear;transform-origin:50% 50%;}
 </style>
+<link rel="stylesheet" href="css/carbon.css">
 </head>
 <body>
 
@@ -471,7 +495,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
   setTimeout(function(){
     var pl = document.getElementById('preloader');
     if(pl){ pl.classList.add('hide'); setTimeout(function(){ pl.remove(); }, 400); }
-  }, 3000);
+  }, 750);
 </script>
 
 <header>
@@ -490,12 +514,15 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
   <!-- ГАРАЖ -->
   <div id="screen-garage" class="screen active">
     <div class="section-title"><span>Ваш гараж</span><span id="garage-count" style="color:#fff;font-size:12px;"></span></div>
+    <div class="quick-service" id="garage-quick-service"></div>
+    <div class="carbon-toolbar" id="garage-toolbar"></div>
     <div class="list-container" id="garage-list"></div>
   </div>
 
   <!-- САЛОН -->
   <div id="screen-shop" class="screen">
-    <div class="section-title"><span>Дилерский центр NFS</span></div>
+    <div class="section-title"><span>Дилерский центр</span></div>
+    <div class="carbon-toolbar" id="shop-toolbar"></div>
     <div class="list-container" id="shop-list"></div>
   </div>
 
@@ -670,6 +697,8 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
       <div class="xp-top"><span>Опыт</span><span id="xp-text">0/100</span></div>
       <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-fill" style="width:0%"></div></div>
     </div>
+    <div class="heat-strip" id="profile-heat"></div>
+    <div id="recent-race-summary" style="width:100%;max-width:520px;margin-bottom:10px;"></div>
     <div class="stats-grid">
       <div class="stat-tile"><div class="val" id="p-balance">0</div><div class="lbl">Баланс 💰</div></div>
       <div class="stat-tile"><div class="val" id="p-cars">0</div><div class="lbl">Машин в гараже</div></div>
@@ -681,6 +710,8 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
       <div class="stat-tile"><div class="val" id="p-fines">0</div><div class="lbl">Штрафов от ДПС</div></div>
     </div>
     <div class="hub-grid">
+      <div class="hub-card" onclick="switchTab('districts')"><div class="ic">🗺️</div><div class="lbl">Районы</div><div class="sub" id="district-progress-sub">Карьера</div></div>
+      <div class="hub-card" onclick="switchTab('contracts')"><div class="ic">📋</div><div class="lbl">Контракты</div><div class="sub" id="contract-progress-sub">Ежедневные</div></div>
       <div class="hub-card" onclick="switchTab('jobs')"><div class="ic">💼</div><div class="lbl">Подработка</div><div class="sub">2-й доход</div></div>
       <div class="hub-card" onclick="switchTab('achievements')"><div class="ic">🏅</div><div class="lbl">Достижения</div><div class="sub" id="ach-progress-sub">0/0</div></div>
       <div class="hub-card" onclick="switchTab('cases')"><div class="ic">🎁</div><div class="lbl">Кейсы</div><div class="sub">Нитро: <span id="hub-nitro-count">0</span></div></div>
@@ -695,6 +726,21 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
     <div class="save-row">
       <button class="btn btn-green" onclick="manualSave()">💾 СОХРАНИТЬ</button>
     </div>
+  </div>
+
+  <!-- КАРТА РАЙОНОВ / КАРЬЕРА -->
+  <div id="screen-districts" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Карта районов</span><span id="district-rep-label"></span></div>
+    <div class="heat-strip" id="district-heat"></div>
+    <div class="district-grid" id="district-grid"></div>
+  </div>
+
+  <!-- ЕЖЕДНЕВНЫЕ КОНТРАКТЫ -->
+  <div id="screen-contracts" class="screen">
+    <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
+    <div class="section-title"><span>Контракты синдиката</span><span id="contract-reset-label"></span></div>
+    <div class="list-container" id="contract-list"></div>
   </div>
 
   <!-- ДОСТИЖЕНИЯ -->
@@ -758,6 +804,9 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
     <div class="section-title"><span>Настройки</span></div>
     <div class="setting-row"><div><b>Звук</b><span>Звуковые эффекты интерфейса</span></div><div class="switch" id="set-sound" onclick="toggleSetting('sound')"><div class="knob"></div></div></div>
     <div class="setting-row"><div><b>Анимации</b><span>Эффекты выигрыша и переходов</span></div><div class="switch" id="set-anim" onclick="toggleSetting('animations')"><div class="knob"></div></div></div>
+    <div class="setting-row"><div><b>Тактильная отдача</b><span>Вибрация Telegram при переключениях и действиях</span></div><div class="switch" id="set-haptics" onclick="toggleSetting('haptics')"><div class="knob"></div></div></div>
+    <div class="setting-row"><div><b>Сниженная анимация</b><span>Минимум движения для слабых устройств</span></div><div class="switch" id="set-reduced-motion" onclick="toggleSetting('reducedMotion')"><div class="knob"></div></div></div>
+    <div class="setting-row"><div><b>Компактный HUD</b><span>Меньше подсказок во время заезда</span></div><div class="switch" id="set-compact-hud" onclick="toggleSetting('compactHud')"><div class="knob"></div></div></div>
     <div class="setting-row"><div><b>Экспорт сохранения</b><span>Скачать файл прогресса .json</span></div><button class="btn btn-ghost" style="width:auto;padding:9px 14px;" onclick="exportSave()">Экспорт</button></div>
     <div class="setting-row"><div><b>Импорт сохранения</b><span>Загрузить файл прогресса</span></div><label class="btn btn-ghost" style="width:auto;padding:9px 14px;cursor:pointer;">Импорт<input type="file" accept="application/json" style="display:none" onchange="importSave(event)"></label></div>
     <div class="setting-row"><div><b>Сброс прогресса</b><span>Удалить весь прогресс безвозвратно</span></div><button class="btn btn-select" style="width:auto;padding:9px 14px;background:var(--accent);" onclick="resetProgress()">Сброс</button></div>
@@ -797,11 +846,3 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 <script src="js/init.js"></script>
 </body>
 </html>
-<style>
-/* v7 race clarity */
-.race-gap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:5px 9px;border:1px solid #3a3d48;border-radius:999px;background:rgba(5,6,9,.88);font-size:9px;font-weight:1000;letter-spacing:.5px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 20px #0008}
-.map-car span{position:absolute;left:50%;top:-15px;transform:translateX(-50%);font-size:7px;font-weight:1000;letter-spacing:.5px;color:#fff;opacity:.85}
-.map-car.ai span{color:#d1d5db}
-.race-lead{margin:6px 0 8px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.4px;color:var(--text-muted)}
-.race-map{min-height:128px}
-</style>
