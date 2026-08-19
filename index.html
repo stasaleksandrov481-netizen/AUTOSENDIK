@@ -440,6 +440,21 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 .pp-stat span{display:block;color:var(--text-muted);font-size:9px;font-weight:900;text-transform:uppercase;}
 .pp-stat b{display:block;margin-top:3px;font-size:15px;}
 
+
+.race3{position:relative;}
+.race-action{position:absolute;left:50%;top:78px;transform:translate(-50%,-8px) scale(.92);opacity:0;z-index:20;background:rgba(10,10,16,.92);border:1px solid #f5c85b;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:1000;letter-spacing:.6px;box-shadow:0 0 24px rgba(245,200,91,.25);pointer-events:none;white-space:nowrap;transition:.18s ease}.race-action.show{opacity:1;transform:translate(-50%,0) scale(1)}
+.race-start-light{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:30;display:none;align-items:center;justify-content:center;flex-direction:row;gap:10px;background:rgba(3,4,7,.88);backdrop-filter:blur(3px);border:1px solid #343747;border-radius:14px;padding:8px 12px;pointer-events:none;box-shadow:0 12px 35px #000a}
+.race-start-light.show{display:flex}
+.traffic-light{width:auto;padding:6px 8px;border-radius:14px;background:#11131a;border:1px solid #343747;box-shadow:none;display:flex;flex-direction:row;gap:6px}
+.traffic-light i{width:22px;height:22px;border-radius:50%;margin:auto;background:#292b35;border:2px solid #414453;box-shadow:inset 0 -4px 8px #0008}
+.traffic-light i.on.tl-red{background:#ef3340;box-shadow:0 0 20px rgba(239,51,64,.75)}
+.traffic-light i.on.tl-yellow{background:#f5c84b;box-shadow:0 0 20px rgba(245,200,75,.75)}
+.traffic-light i.on.tl-green{background:#22c55e;box-shadow:0 0 20px rgba(34,197,94,.75)}
+.race-start-light b{font-size:11px;letter-spacing:2px;text-shadow:0 2px 12px #000}
+.player-lb-head{font-size:10px;color:var(--text-muted);font-weight:900;margin-bottom:8px}
+.player-lb-cars{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.player-lb-car{font-size:8px;padding:3px 6px;border-radius:6px;background:#101018;border:1px solid #252531;color:#cbd5e1}
+
 </style>
 </head>
 <body>
@@ -699,7 +714,8 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
   <!-- РЕЙТИНГ -->
   <div id="screen-leaderboard" class="screen">
     <div class="back-link" onclick="switchTab('profile')">← Профиль</div>
-    <div class="section-title"><span>Рейтинг подполья</span></div>
+    <div class="section-title"><span>Игроки синдиката</span></div>
+    <div class="player-lb-head">Только реальные игроки, которые запускали игру. Профиль показывает баланс, уровень и весь гараж.</div>
     <div class="list-container" id="lb-list"></div>
   </div>
 
