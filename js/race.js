@@ -42,8 +42,6 @@ function prepareRace(target,mode){
     const next=r.day===dayKey?(Number(r.next)||0):0;
     if(count>=3){showToast('🏁 Этот турнир уже сыгран 3 раза сегодня.');renderOpponents();return;}
     if(next>now){showToast('⏳ Следующая попытка будет доступна через '+Math.ceil((next-now)/60000)+' мин.');renderOpponents();return;}
-    state.tournamentRuns[key]={day:dayKey,count:count+1,next:now+15*60*1000};
-    saveState();
   }
   const car=carsDB.find(c=>c.id===state.activeCarId);
   if(!car||!opp)return;
@@ -51,14 +49,24 @@ function prepareRace(target,mode){
   const fee=opp.pvp?opp.stake:entryFeeFor(opp),fuelCost=opp.pvp?18:fuelCostFor(opp);
   if(state.coins<fee){showToast('Недостаточно SYND для входа');switchTab('jobs');return;}
   if(getFuel(car.id)<fuelCost){showToast('Недостаточно топлива');openDetail(car.id);return;}
+  if(mode==='tour'){
+    const now=Date.now(), dayKey=new Date().toISOString().slice(0,10), key=String(opp.id);
+    const r=state.tournamentRuns[key]||{};
+    const count=r.day===dayKey?(Number(r.count)||0):0;
+    const next=r.day===dayKey?(Number(r.next)||0):0;
+    state.tournamentRuns[key]={day:dayKey,count:count+1,next:now+15*60*1000};
+    saveState();
+  }
   const profile=raceTuneProfile(car);
   const route=['Промзона','Ночной проспект','Портовый обход','Тоннель','Старая эстакада'][Math.floor(Math.random()*5)];
   const radarChance=opp.pvp?0:0.12+(opp.boss?.06:0);
-  const maxSpeed=Math.round(225+getEffectivePower(car)*.72);
+  const rawPower=getEffectivePower(car);
+  const maxSpeed=Math.round(Math.max(170,Math.min(380,175+rawPower*.115)));
+  const trackLength=1200;
   raceCtx={
     opp,mode,fee,fuelCost,useNitro:false,profile,route,radarChance,
     radar:false,gas:false,brake:false,gear:1,rpm:1100,speed:0,distance:0,
-    aiDistance:0,aiSpeed:0,aiGear:1,aiRpm:1200,aiShiftTimer:0,aiSkill:0,
+    aiDistance:0,aiSpeed:0,aiGear:1,aiRpm:1200,aiShiftTimer:0,aiSkill:0,aiFinishedAt:0,playerFinishedAt:0,lastLead:0,lastPassAt:0,trackLength:trackLength,
     finished:false,launchMode:null,shiftCount:0,goodShifts:0,perfectShifts:0,errors:0,elapsed:0,actionTimer:0,actionText:'',
     lastTs:0,raf:null,launchIv:null,uiTimer:0,uiInterval:0,
     maxSpeed,redline:8500,startLocked:false,startTimer:0
@@ -128,8 +136,8 @@ function showRaceCockpit(){
   document.getElementById('race-content').innerHTML=
   '<div class="race3"><div class="race3-top"><div class="race3-driver"><b>'+escapeHtml(car.name)+'</b><span>'+getEffectivePower(car)+' л.с.</span></div><div class="race3-vs">VS</div><div class="race3-driver" style="text-align:right;"><b>'+escapeHtml(o.name)+'</b><span>'+o.power+' л.с.</span></div></div>'+
   '<div class="race-start-light" id="race-start-light"><div class="traffic-light"><i class="tl-red on"></i><i class="tl-yellow"></i><i class="tl-green"></i></div><b id="race-start-text">ГОТОВЬСЯ</b></div>'+
-  '<div class="race-map"><div class="speed-effects" id="speed-effects"></div><div class="map-label start">START</div><div class="map-label finish">FINISH</div><div class="map-start"></div><div class="map-finish"></div><div class="map-road"><div class="map-car" id="map-me" style="left:3%"></div><div class="map-car ai" id="map-ai" style="left:3%"></div></div></div>'+
-  '<div class="race-event-badge"><span id="race-status">ГАЗ ДЛЯ РАЗГОНА · ЛОВИ ЗОНУ</span><b id="race-route">'+c.route+'</b></div>'+'<div class="race-action" id="race-action"></div>'+
+  '<div class="race-map"><div class="speed-effects" id="speed-effects"></div><div class="map-label start">START</div><div class="map-label finish">FINISH</div><div class="map-start"></div><div class="map-finish"></div><div class="map-road"><div class="map-car" id="map-me" style="left:3%"><span>YOU</span></div><div class="map-car ai" id="map-ai" style="left:3%"><span>RIVAL</span></div><div class="race-gap" id="race-gap">СТАРТ</div></div></div>'+
+  '<div class="race-event-badge"><span id="race-status">ГАЗ ДЛЯ РАЗГОНА · ЛОВИ ЗОНУ</span><b id="race-route">'+c.route+'</b></div><div class="race-lead" id="race-lead">Позиция: РОВНО · до финиша '+c.trackLength+' м</div>'+'<div class="race-action" id="race-action"></div>'+
 
   '<div class="cockpit3"><div class="analog-gauge tacho3"><div class="gauge-caption">RPM ×1000</div><div class="dial zone-dial" id="rpm-dial"><div class="dial-ticks"></div><div class="dial-needle" id="rpm-needle"></div><div class="dial-hub"></div><div class="gear3" id="race-gear">1</div><div class="gauge-center"><b id="race-rpm">1.1</b><span>×1000</span></div></div><div class="gauge-scale"><span>0</span><span>4</span><span>8.5</span></div></div>'+
   '<div class="analog-gauge speed3"><div class="gauge-caption">SPEED</div><div class="dial speed-dial zone-dial" id="speed-dial"><div class="dial-ticks"></div><div class="dial-needle speed-needle" id="speed-needle"></div><div class="dial-hub"></div><div class="gauge-center"><b id="race-speed">0</b><span>KM/H</span></div></div><div class="gauge-scale"><span>0</span><span>'+c.maxSpeed+'</span></div></div></div>'+
@@ -248,22 +256,33 @@ function simulateRace(dt){
     c.speed=Math.max(0,c.speed-70*dt);
   }
   c.speed=Math.max(0,Math.min(c.maxSpeed,c.speed));
-  c.distance=Math.min(100,c.distance+(c.speed/Math.max(c.maxSpeed,1))*29*dt);
+  /* Реальная дистанция: км/ч -> м/с. Финиш только на физическом конце 1200 м. */
+  c.distance=Math.min(c.trackLength,c.distance+(c.speed/3.6)*dt);
 
-  /* AI: skill + power, без скрытого 95% преимущества. */
+  /* AI тоже движется по той же физической дистанции. Он может быть впереди/сзади,
+     но не завершает раунд сам по себе: результат фиксируется только после того,
+     как игрок пересёк физическую финишную линию. */
   const myPower=getEffectivePower(carsDB.find(x=>x.id===state.activeCarId));
   const ratioPower=Math.max(.72,Math.min(1.28,c.opp.power/Math.max(myPower,1)));
-  // AI intentionally stays within a believable pace and cannot end the round
-  // while the player is still around the middle of the track.
-  const aiPace=Math.max(.70,Math.min(.82,.76+(myPower-c.opp.power)/Math.max(myPower,1)*.045));
-  const aiTarget=c.maxSpeed*aiPace*c.aiSkill;
-  c.aiSpeed+=((aiTarget-c.aiSpeed)*1.45*dt);
+  const aiPace=Math.max(.88,Math.min(1.02,.95+(ratioPower-1)*.12));
+  const targetVariation=1+Math.sin(c.elapsed*.63)*.025+Math.sin(c.elapsed*1.71)*.012;
+  const aiTarget=Math.min(c.maxSpeed*.98, c.maxSpeed*aiPace*c.aiSkill*targetVariation);
+  c.aiSpeed+=((aiTarget-c.aiSpeed)*1.25*dt);
   if(c.elapsed<c.aiStartDelay)c.aiSpeed*=Math.max(0,1-dt*5);
-  c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*.88,c.aiSpeed));
-  c.aiDistance=Math.min(100,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*29*dt);
+  c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*.98,c.aiSpeed));
+  c.aiDistance=Math.min(c.trackLength,c.aiDistance+(c.aiSpeed/3.6)*dt);
 
-  if(c.distance>=100){finishRace(true,c);return;}
-  if(c.aiDistance>=100){finishRace(false,c);return;}
+  /* Важно: соперник, пересёкший финиш, не закрывает экран. Игрок обязан
+     физически доехать до конца, и только тогда определяется победитель. */
+  if(c.aiDistance>=c.trackLength && !c.aiFinishedAt){
+    c.aiFinishedAt=c.elapsed;
+    showAction('СОПЕРНИК ПЕРЕСЁК ФИНИШ · ДОЕЗЖАЙ ДО КОНЦА');
+    const status=document.getElementById('race-status');if(status)status.innerText='СОПЕРНИК УЖЕ НА ФИНИШЕ · ДОЕЗЖАЙ ДО КОНЦА';
+  }
+  if(c.distance>=c.trackLength){
+    c.playerFinishedAt=c.elapsed;
+    finishRace(!c.aiFinishedAt || c.playerFinishedAt<=c.aiFinishedAt,c);return;
+  }
 }
 function updateRaceZones(){
   const c=raceCtx;if(!c)return;
@@ -293,8 +312,28 @@ function updateRaceHUD(){
   const fx=document.getElementById('speed-effects');if(fx)fx.classList.toggle('fast',c.speed>c.maxSpeed*.55);
   if(gear)gear.innerText=c.gear;
   if(sp)sp.innerText=Math.round(c.speed);
-  if(me){me.style.left=(4+Math.min(100,c.distance)*.92)+'%';me.style.transform='translateX(-50%)';}
-  if(ai){ai.style.left=(4+Math.min(100,c.aiDistance)*.92)+'%';ai.style.transform='translateX(-50%)';}
+  const mePct=Math.max(0,Math.min(100,c.distance/c.trackLength*100));
+  const aiPct=Math.max(0,Math.min(100,c.aiDistance/c.trackLength*100));
+  if(me){me.style.left=(4+mePct*.92)+'%';me.style.transform='translateX(-50%)';}
+  if(ai){ai.style.left=(4+aiPct*.92)+'%';ai.style.transform='translateX(-50%)';}
+  const gapEl=document.getElementById('race-gap');
+  const leadEl=document.getElementById('race-lead');
+  const gap=c.distance-c.aiDistance;
+  const leadSign=gap>2?1:gap<-2?-1:0;
+  if(leadSign!==c.lastLead && c.elapsed>1.2){
+    if(leadSign===1) showAction('ОБГОН! ТЫ ВЫШЕЛ ВПЕРЁД');
+    else if(leadSign===-1) showAction('ТЕБЯ ОБОШЛИ! НАЖИМАЙ И ОТЫГРЫВАЙСЯ');
+    c.lastLead=leadSign;
+  }
+  if(gapEl){
+    if(Math.abs(gap)<2) gapEl.innerText='РОВНО · БОРЬБА ЗА ПОЗИЦИЮ';
+    else if(gap>0) gapEl.innerText='YOU +'+Math.abs(gap).toFixed(1)+' м ВПЕРЕДИ';
+    else gapEl.innerText='RIVAL +'+Math.abs(gap).toFixed(1)+' м ВПЕРЕДИ';
+  }
+  if(leadEl){
+    const remain=Math.max(0,c.trackLength-c.distance);
+    leadEl.innerText=(gap>2?'ТЫ ВПЕРЕДИ · ':gap<-2?'СОПЕРНИК ВПЕРЕДИ · ':'РОВНО · ')+'до финиша '+Math.ceil(remain)+' м';
+  }
   const help=document.getElementById('shift-help');
   if(help)help.innerText=c.gear>=6?'6-я передача · МАКСИМУМ · держи газ':'Передача '+c.gear+' · жёлтая — хорошо · зелёная — идеально';
   const sb=document.getElementById('shift-btn');if(sb)sb.classList.toggle('locked',c.gear>=6);
@@ -316,22 +355,22 @@ function finishRace(playerWins,c){
   const tourRewardMult = c.mode==='tour' ? ([1,.72,.48][Math.min(2,completedAttempt-1)]||.48) : 1;
   if(playerWins){
     state.stats.wins++;state.winStreak=(state.winStreak||0)+1;
-    const streak=Math.min(.25,state.winStreak*.05);
-    reward=Math.round((opp.reward*tourRewardMult*(1+.08*performance))*(1+streak));
-    if(c.perfectShifts>=2)reward+=Math.round(opp.reward*tourRewardMult*.12);
+    /* Экономика прозрачная: выплата РОВНО такая, какая была показана до старта.
+       Никаких скрытых бонусов за серию, идеальные переключения или старт. */
+    reward=Math.max(0,Math.round(opp.reward*tourRewardMult));
     xp=(opp.boss||c.mode==='tour')?40:16;
-    if(c.launchMode==='spin'&&c.goodShifts>=2)reward+=Math.round(opp.reward*tourRewardMult*.05);
     if(opp.pvp)resolvePvpChallenge(opp.row,true,reward);
   }else{
-    state.stats.losses++;state.winStreak=0;reward=Math.round(opp.reward*.04)+15;xp=4;
+    state.stats.losses++;state.winStreak=0;reward=0;xp=4;
     if(opp.pvp)resolvePvpChallenge(opp.row,false,0);
   }
   const id=String(opp.id);state.raceHistory=(state.raceHistory||[]).filter(x=>x!==id);state.raceHistory.push(id);state.raceHistory=state.raceHistory.slice(-8);
   addXP(xp);awardMoney(reward,playerWins?'ПОБЕДА В ЗАЕЗДЕ':'УТЕШИТЕЛЬНЫЙ ПРИЗ');
   const el=document.getElementById('race-content');
   el.innerHTML='<div class="race3"><div class="result-box '+(playerWins?'win':'lose')+'"><div class="result-title">'+(playerWins?'🏆 ФИНИШ ПЕРВЫМ':'💥 ФИНИШ ВТОРЫМ')+'</div>'+
-    '<div class="result-sub">'+(playerWins?'Твой контроль газа и передач решил заезд.':'Соперник удержал темп. Попробуй лучшее переключение или более сильный старт.')+'</div>'+
-    '<div class="result-reward">+'+fmt(reward)+' SYND</div><div class="xp-gain-box">⭐ +'+xp+' XP · Идеальных переключений: '+c.perfectShifts+'</div></div>'+
+    '<div class="result-sub">'+(playerWins?'Ты пересёк физическую линию FINISH первым.':'Ты пересёк физическую линию FINISH после соперника.')+'</div>'+
+    '<div class="result-reward">'+(reward>0?'+':'')+fmt(reward)+' SYND</div>'+
+    '<div class="xp-gain-box">⭐ +'+xp+' XP · Идеальных переключений: '+c.perfectShifts+'</div></div>'+
     '<div class="list-container"><button class="btn btn-select" onclick="switchTab(\'duel-select\')">НОВАЯ СЛУЧАЙНАЯ ПАРА</button><button class="btn btn-ghost" onclick="switchTab(\'garage\')">В ГАРАЖ</button></div></div>';
   updateHeader();saveState();checkAchievements();
   if(!opp.pvp&&Math.random()<c.radarChance){state.raceStats.radarEvents=(state.raceStats.radarEvents||0)+1;setTimeout(triggerPoliceStop,700);}
