@@ -10,6 +10,7 @@ function defaultState(){
     playerName: 'Гонщик', playerPhoto:null, playerId:null,
     coins:1500, xp:0, level:1, nitro:2,
     ownedCars:[1], activeCarId:1, upgrades:{}, fuel:{}, condition:{},
+    vehicleInstances:{}, plates:{}, tuningHistory:{}, caseHistory:[],
     stats:{races:0,wins:0,losses:0,bossWins:0,totalEarned:0,totalSpent:0,finesPaid:0,finesCount:0,casinoWagered:0,casinoWon:0,blackjackWins:0,casesOpened:0},
     jobCooldowns:{}, achievements:{}, dailyStreak:0, lastDailyClaim:0,
     settings:{sound:true,animations:true,haptics:true,reducedMotion:false,compactHud:false},

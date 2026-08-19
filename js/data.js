@@ -126,3 +126,27 @@ const BANK_MAX_PER_TRANSFER = 800;
 const BANK_MAX_PER_DAY = 2000;
 const BANK_COOLDOWN_MS = 10*60*1000; // 10 минут между переводами одному игроку
 
+
+
+/* ==================== CARBON VEHICLE SYSTEM ==================== */
+const plateRarities = {
+  common:{chance:70,value:1},
+  rare:{chance:22,value:5},
+  epic:{chance:7,value:15},
+  legendary:{chance:1,value:50}
+};
+
+const caseDrops = [
+ {type:'money',name:'SYND Credits',rarity:'common'},
+ {type:'tune',name:'Stage Engine Upgrade',rarity:'rare'},
+ {type:'plate',name:'777 CARBON',rarity:'epic'},
+ {type:'car',name:'Rare Vehicle',rarity:'legendary'}
+];
+
+function generatePlate(){
+  const pool=[
+    'A123AA','X777XX','777 CARBON','RACE 01',
+    'NFS KING','666 BOSS','RZR 777'
+  ];
+  return pool[Math.floor(Math.random()*pool.length)];
+}

@@ -7,6 +7,7 @@
    - две маленькие зоны: жёлтая / зелёная
 */
 let raceCtx=null;
+let speedFX={fov:1,shake:0};
 const GEAR_LABELS=['N','1','2','3','4','5','6'];
 
 function raceTuneProfile(car){
@@ -20,10 +21,10 @@ function raceTuneProfile(car){
   const yellowWidth=Math.min(0.15,greenWidth+0.028+transLevel*.006);
   return {
     sum,engine,trans,turbo,grip,
-    rpmRate:1+sum*.055+engine*.025+turbo*.035,
+    rpmRate:1.15+sum*.065+engine*.035+turbo*.055,
     greenWidth,yellowWidth,
     launchGrip:Math.min(.98,.70+transLevel*.025+grip*.025),
-    accel:1+engine*.018+turbo*.028,
+    accel:1.18+engine*.025+turbo*.045,
     shiftRecovery:Math.min(.72,.52+transLevel*.035)
   };
 }
