@@ -1,0 +1,162 @@
+/* AutoSyndicate 5.0 — Carbon District UI layer
+   Keeps the NFS Carbon mood: graphite, carbon weave, amber instrumentation,
+   restrained acid-green success states, hard motorsport geometry. */
+:root{
+  --bg-dark:#070807;
+  --panel:#10120f;
+  --panel-2:#151813;
+  --panel-3:#1b1f18;
+  --panel-border:#2b3127;
+  --accent:#d7a928;
+  --accent-2:#f1cf5b;
+  --accent-glow:rgba(215,169,40,.18);
+  --green:#93bf3b;
+  --gold:#d7a928;
+  --blue:#8aa8aa;
+  --purple:#998f78;
+  --danger:#d24939;
+  --text-main:#f2f1e9;
+  --text-muted:#858b7c;
+  --carbon-line:rgba(255,255,255,.016);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html{background:#050605;color-scheme:dark;overscroll-behavior:none}
+body{
+  min-height:100dvh;height:100dvh;
+  background:
+    radial-gradient(1000px 520px at 82% -10%,rgba(215,169,40,.10),transparent 55%),
+    radial-gradient(760px 440px at -10% 38%,rgba(91,112,58,.08),transparent 58%),
+    repeating-linear-gradient(45deg,var(--carbon-line) 0 1px,transparent 1px 5px),
+    repeating-linear-gradient(-45deg,var(--carbon-line) 0 1px,transparent 1px 5px),
+    #070807;
+  font-family:"Arial Narrow","Segoe UI",Arial,sans-serif;
+  letter-spacing:.01em;
+}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(105deg,transparent 0 63%,rgba(255,255,255,.018) 63.2% 63.5%,transparent 63.8%);mix-blend-mode:screen}
+header,main,nav,#daily-modal-root,#police-modal-root,#money-modal-root,#public-profile-root{position:relative;z-index:1}
+
+/* Header: narrow, mechanical and readable. */
+header{
+  padding:calc(9px + var(--safe-top)) 12px 9px;
+  background:linear-gradient(180deg,rgba(16,18,15,.97),rgba(8,9,8,.95));
+  border-bottom:1px solid #343a2f;
+  box-shadow:0 8px 28px rgba(0,0,0,.42);
+  backdrop-filter:blur(12px) saturate(.8);
+}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.5}
+.avatar-mini{width:36px;height:36px;border-radius:7px;background:#171a15;border:1px solid #3b4135;box-shadow:inset 0 0 0 1px #0a0b09;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.logo{font-family:"Arial Narrow","Segoe UI",sans-serif;font-size:15px;font-style:italic;letter-spacing:1.6px;text-shadow:0 2px 10px #000;text-transform:uppercase}
+.logo span{color:var(--accent-2);text-shadow:0 0 12px rgba(215,169,40,.25)}
+.balance,.rep-badge{border-radius:5px;background:linear-gradient(180deg,#171a15,#0d0f0c);border-color:#343a2f;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.rep-badge{color:var(--accent-2);border-color:#6b5822;background:rgba(59,48,18,.45)}
+.synd-balance .currency-chip,.balance span{color:var(--accent-2)!important}
+
+main{padding:14px 12px calc(98px + var(--safe-bottom));scrollbar-width:thin;scrollbar-color:#4a4f42 transparent}
+main::-webkit-scrollbar{width:4px} main::-webkit-scrollbar-thumb{background:#454a3e;border-radius:4px}
+.screen{animation:carbonScreenIn .19s cubic-bezier(.2,.8,.2,1)}
+@keyframes carbonScreenIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:none}}
+.section-title{font-size:13px;color:#a8ad9e;letter-spacing:1.55px;margin:2px 0 10px;padding-left:11px;position:relative}
+.section-title::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:3px;background:var(--accent);transform:skewX(-14deg);box-shadow:0 0 10px var(--accent-glow)}
+.back-link{color:#a3a998;letter-spacing:.9px;border-left:2px solid #3b4035;padding-left:9px;transition:.15s ease}
+.back-link:active{color:var(--accent-2);border-color:var(--accent)}
+
+/* Cards: fewer soft panels, more layered motorsport plates. */
+.car-card,.opp-card,.stat-row,.resource-box,.sell-picker,.setting-row,.job-card,.listing-card,.game-table,.bet-panel,.profile-hero,.public-profile,.launch-panel,.pre-race-box{
+  background:
+    linear-gradient(125deg,rgba(255,255,255,.025),transparent 30%),
+    repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,#151813,#0e100d);
+  border-color:#31372d;
+  box-shadow:0 12px 26px rgba(0,0,0,.26),inset 0 1px rgba(255,255,255,.025);
+  border-radius:8px;
+}
+.car-card{clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);transition:transform .17s ease,border-color .17s ease,filter .17s ease}
+.car-card:active{transform:scale(.992);filter:brightness(1.05)}
+.car-thumb{height:154px;background:#060706;overflow:hidden}
+.car-thumb::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 48%,rgba(4,5,4,.88) 100%),linear-gradient(90deg,rgba(215,169,40,.08),transparent 25%);z-index:1}
+.car-real-image{transition:transform .3s ease,filter .3s ease;filter:saturate(.8) contrast(1.04)}
+.car-card:active .car-real-image{transform:scale(1.018)}
+.tier-badge,.power-badge,.boss-badge,.mine-tag{border-radius:3px;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);letter-spacing:.5px}
+.power-badge{background:rgba(28,31,25,.91);border:1px solid #746028;color:var(--accent-2)}
+.tier-badge{background:rgba(7,8,7,.84);color:#d5d7ce;border-color:#444a3d}
+.boss-badge{background:var(--accent);color:#151104}
+.car-title{font-family:"Arial Narrow","Segoe UI",sans-serif;letter-spacing:.35px}
+.car-stats{color:#8c9284}.car-stats span{color:#dfe2d7}
+
+/* Carbon buttons */
+.btn,.big-btn,.sell-btn,.job-btn,.tune-btn,.chat-send-btn,.chip-btn,.launch-btn,.race-control{border-radius:5px;transition:transform .1s ease,filter .12s ease,border-color .12s ease;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.btn:focus-visible,.big-btn:focus-visible,.sell-btn:focus-visible,.job-btn:focus-visible,.tune-btn:focus-visible,.chip-btn:focus-visible,.chat-input:focus-visible,.bet-input:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.btn-select,.big-btn{background:linear-gradient(180deg,#c59a22,#7f6316)!important;color:#100e08!important;border:1px solid #e0bd50!important;box-shadow:inset 0 1px rgba(255,255,255,.22),0 5px 18px rgba(0,0,0,.24)!important;text-shadow:0 1px rgba(255,255,255,.12)}
+.btn-ghost{background:linear-gradient(180deg,#1a1e18,#10120f);border-color:#3a4035;color:#dde0d5}
+.btn-buy{background:linear-gradient(180deg,#e7e8df,#adb0a5);color:#10110f}
+.btn-gold{background:linear-gradient(180deg,#e0b638,#9c7718);color:#161104}
+.btn-green,.selected-mark{background:linear-gradient(180deg,#9ebd4b,#536e24)!important;color:#0b0f06!important;border-color:#a9c75b!important}
+.btn:active,.big-btn:active,.sell-btn:active,.job-btn:active,.tune-btn:active,.chip-btn:active{transform:translateY(2px) scale(.99);filter:brightness(1.08)}
+.btn:disabled,.big-btn:disabled,.sell-btn:disabled,.tune-btn:disabled{filter:saturate(.2);opacity:.45;cursor:not-allowed}
+
+.subtabs,.market-tabs{gap:4px;background:#090a09;border:1px solid #2e332a;padding:4px;border-radius:6px}
+.subtab-btn{border:0;border-radius:3px;background:transparent;color:#818778;letter-spacing:.7px;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.subtab-btn.active{background:linear-gradient(180deg,#4c411d,#2b250f);color:var(--accent-2);box-shadow:inset 0 0 0 1px #715d21}
+
+/* Profile/hub becomes an actual dashboard rather than a wall of panels. */
+.profile-hero{padding:17px;border-radius:8px!important;position:relative;overflow:hidden}
+.profile-hero::after{content:"CREW // DRIVER";position:absolute;right:-7px;top:13px;transform:rotate(90deg);font-size:8px;letter-spacing:1.7px;color:#555b4e}
+.avatar-circle{border-radius:7px!important;background:#171a15!important;border:1px solid #4b513f!important;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.stats-grid{gap:6px}.stat-tile{border-radius:5px!important;background:#10120f!important;border-color:#2f342b!important;position:relative;overflow:hidden}.stat-tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:#4b503f}.stat-tile .val{font-variant-numeric:tabular-nums}
+.hub-grid{gap:7px}.hub-card{border-radius:6px!important;background:linear-gradient(145deg,#171a15,#0e100d)!important;border-color:#31362c!important;min-height:86px;position:relative;overflow:hidden}.hub-card::after{content:"";position:absolute;right:-17px;bottom:-26px;width:58px;height:58px;border:1px solid #2f342a;transform:rotate(45deg)}.hub-card .ic{filter:saturate(.5)}.hub-card .lbl{letter-spacing:.35px}
+
+/* New career / district / contract UI */
+.carbon-toolbar{width:100%;max-width:520px;display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none}.carbon-toolbar::-webkit-scrollbar{display:none}
+.carbon-chip{flex:0 0 auto;border:1px solid #353a31;background:#10120f;color:#929888;padding:7px 10px;border-radius:4px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;cursor:pointer;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)}
+.carbon-chip.active{color:var(--accent-2);border-color:#756126;background:#302711}
+.quick-service{width:100%;max-width:520px;display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px}
+.quick-service-card{padding:10px;border:1px solid #32382d;background:linear-gradient(180deg,#151813,#0e100d);border-radius:6px;cursor:pointer}.quick-service-card span{display:block;color:#83897b;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.6px}.quick-service-card b{display:block;margin-top:4px;font-size:12px;color:#e6e8df}
+.district-grid{width:100%;max-width:520px;display:grid;gap:8px}.district-card{position:relative;overflow:hidden;border:1px solid #353a30;background:linear-gradient(130deg,#181b16,#0c0e0b);min-height:116px;padding:13px;border-radius:7px;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}.district-card::after{content:"";position:absolute;right:-28px;top:-28px;width:100px;height:100px;border:18px solid rgba(215,169,40,.035);transform:rotate(45deg)}.district-card.locked{filter:saturate(.25);opacity:.58}.district-card .district-kicker{font-size:8px;color:#777d70;letter-spacing:1.5px;font-weight:900}.district-card h3{font-size:18px;margin:3px 0 5px;font-style:italic;text-transform:uppercase}.district-card .district-desc{font-size:10px;color:#8d9385;max-width:78%}.district-progress{height:5px;margin-top:11px;background:#090a09;border:1px solid #292e26;overflow:hidden}.district-progress>i{display:block;height:100%;background:linear-gradient(90deg,#7a5f17,var(--accent-2));width:0}.district-meta{display:flex;justify-content:space-between;margin-top:6px;color:#858b7d;font-size:9px;font-weight:900}
+.contract-card{border:1px solid #353a30;background:linear-gradient(180deg,#151813,#0e100d);padding:12px;border-radius:6px}.contract-top{display:flex;justify-content:space-between;gap:10px}.contract-name{font-weight:1000;font-size:13px}.contract-reward{color:var(--accent-2);font-size:11px;font-weight:1000}.contract-desc{font-size:10px;color:#898f80;margin-top:4px}.contract-progress{height:7px;background:#080908;border:1px solid #2b3028;margin:9px 0 5px;overflow:hidden}.contract-progress>i{display:block;height:100%;background:linear-gradient(90deg,#6c7f2d,#a8c653)}.contract-foot{display:flex;justify-content:space-between;font-size:9px;color:#7f8577;font-weight:900}
+.heat-strip{width:100%;max-width:520px;background:#0d0f0c;border:1px solid #34392f;padding:10px;border-radius:6px;margin-bottom:10px}.heat-head{display:flex;justify-content:space-between;font-size:10px;font-weight:1000;letter-spacing:.7px}.heat-bars{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:7px}.heat-bars i{height:6px;background:#232820;border:1px solid #30362b}.heat-bars i.on{background:linear-gradient(90deg,#76352d,var(--danger));border-color:#9b4b3d}
+
+/* Race cockpit — clearer Carbon instrument cluster. */
+.race3{width:100%}.race3-top{margin-bottom:8px!important}.race3-vs{color:var(--accent-2)!important;font-style:italic;letter-spacing:2px}.race-event-badge{border-radius:5px;background:linear-gradient(180deg,#171a15,#0d0f0c);border-color:#343a2f;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}.race-event-badge b{color:var(--accent-2)}
+.race-map{border-radius:6px!important;background:linear-gradient(180deg,#0d0f0c,#070807)!important;border-color:#353a2f!important;overflow:hidden}.race-map::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 23px,rgba(255,255,255,.014) 23px 24px)}
+.map-road{border-color:#444b3f!important;background:#151713!important}.map-car{background:var(--accent)!important;box-shadow:0 0 8px rgba(215,169,40,.3)!important}.map-car.ai{background:#c5c7be!important}.race-gap{border-radius:4px!important;border-color:#4a4f42!important;background:rgba(8,9,8,.92)!important}
+.cockpit3{gap:7px}.analog-gauge{border-radius:50%!important;padding:9px;background:radial-gradient(circle at 50% 48%,#22251e 0,#0f110e 54%,#050605 76%);border-color:#41473b;box-shadow:inset 0 0 32px #000,0 8px 22px #0009}.dial{border-color:#4a5043;background:radial-gradient(circle,#141612 0 56%,#070807 58% 100%)}.dial:before{opacity:.82}.dial-needle{background:var(--accent-2);box-shadow:0 0 8px rgba(241,207,91,.45);transform-origin:50% 100%!important}.speed-needle{background:#e5e7df;box-shadow:0 0 8px rgba(255,255,255,.34)}.gear3{color:var(--accent-2);text-shadow:none}.gauge-caption{color:#9da394}.gauge-scale{color:#7c8274}
+.race-controls{grid-template-columns:.9fr .9fr 1.05fr .8fr}.race-control{height:78px;border-radius:6px!important;box-shadow:0 5px 0 #050605,0 8px 16px #0007!important}.race-control.gas{background:linear-gradient(180deg,#405225,#1c2513);border-color:#6f8c36}.race-control.brake{background:linear-gradient(180deg,#5f2b25,#25120f);border-color:#824139}.race-control.shift{background:linear-gradient(180deg,#5f4b1b,#241c09);border-color:#8c6f28}.race-control.nitro{background:linear-gradient(180deg,#2d4b4a,#12201f);border-color:#567a77}.race-control.nitro.used{filter:saturate(.2);opacity:.46}.nitro-face{display:block;font-size:20px;line-height:31px;color:#a5cecb}.race-nitro-bar{height:4px;background:#080908;border:1px solid #2d3329;overflow:hidden;margin-top:5px}.race-nitro-bar>i{display:block;height:100%;width:0;background:#91bfba;transition:width .1s linear}
+.race-start-light{border-radius:6px;background:rgba(8,9,8,.94);border-color:#4a4f42}.traffic-light{border-radius:5px}.traffic-light i{width:19px;height:19px}.race-action{border-radius:4px;border-color:#7b6627;background:rgba(9,10,8,.95);color:#e7dec2;box-shadow:none}
+
+/* Inputs */
+.chat-input,.bet-input{background:#090a09!important;color:#eceee6!important;border:1px solid #363c31!important;border-radius:4px!important}.chat-input::placeholder{color:#62685d}.chat-status,.empty-note{color:#818778}
+
+/* Toast / overlays */
+.toast{background:#11140f!important;border:1px solid #4a513f!important;color:#f2f1e9!important;border-radius:5px!important;box-shadow:0 14px 35px #0009!important;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.modal-overlay{background:rgba(3,4,3,.82)!important;backdrop-filter:blur(4px)}
+.modal-box,.police-modal{border-radius:7px!important;background:linear-gradient(150deg,#181b16,#0c0e0b)!important;border-color:#41473a!important}
+
+/* Accessibility, desktop keyboard and mobile safe areas */
+button,input,label,.hub-card,.car-thumb,.carbon-chip{touch-action:manipulation}
+@media (hover:hover){.hub-card:hover,.car-card:hover,.district-card:not(.locked):hover{border-color:#555d4d;filter:brightness(1.035)}.btn:not(:disabled):hover,.big-btn:not(:disabled):hover{filter:brightness(1.08)}}
+@media (max-width:390px){header{padding-left:9px;padding-right:9px}.logo{font-size:13px}.currency-name{display:none}.balance{padding:6px 7px}.cockpit3{gap:4px}.analog-gauge{min-height:154px}.race-control{height:72px}.race-controls{gap:5px}.hub-grid{grid-template-columns:1fr 1fr!important}}
+@media (min-width:760px){main{padding-top:22px}.screen{max-width:860px;margin:0 auto}.list-container,.section-title,.xp-wrap,.profile-hero,.stats-grid,.hub-grid,.heat-strip,.district-grid,.carbon-toolbar,.quick-service{max-width:680px!important}.car-thumb{height:190px}.district-grid{grid-template-columns:1fr 1fr}.hub-grid{grid-template-columns:repeat(3,1fr)!important}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+body.reduce-motion *,body.reduce-motion *::before,body.reduce-motion *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+
+/* Existing race clarity style, moved out of invalid post-HTML markup. */
+.race-gap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:5px 9px;font-size:9px;font-weight:1000;letter-spacing:.5px;white-space:nowrap;pointer-events:none}
+.map-car span{position:absolute;left:50%;top:-15px;transform:translateX(-50%);font-size:7px;font-weight:1000;letter-spacing:.5px;color:#fff;opacity:.85}.map-car.ai span{color:#d1d5db}.race-lead{margin:6px 0 8px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.4px;color:var(--text-muted)}.race-map{min-height:128px}
+
+/* Bottom navigation and loader */
+nav{
+  background:linear-gradient(180deg,rgba(15,17,14,.95),rgba(7,8,7,.985))!important;
+  border-top:1px solid #343a2f!important;
+  padding-bottom:var(--safe-bottom)!important;
+  box-shadow:0 -12px 30px rgba(0,0,0,.38);
+}
+.nav-btn{padding:9px 0 8px!important;color:#767c6f!important;font-size:8.5px!important;letter-spacing:.55px;position:relative}
+.nav-btn::before{content:"";position:absolute;left:24%;right:24%;top:0;height:2px;background:transparent;transform:skewX(-18deg)}
+.nav-btn.active{color:var(--accent-2)!important;background:linear-gradient(180deg,rgba(215,169,40,.07),transparent)!important;box-shadow:none!important}
+.nav-btn.active::before{background:var(--accent)}
+.nav-btn .ic svg{width:19px!important;height:19px!important}.nav-btn.active svg{filter:drop-shadow(0 0 5px rgba(215,169,40,.18))!important}
+#preloader{background:radial-gradient(circle at 50% 40%,#171a15 0,#090a09 42%,#050605 78%)!important;gap:14px!important}
+#preloader::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 1px,transparent 1px 5px),repeating-linear-gradient(-45deg,rgba(255,255,255,.012) 0 1px,transparent 1px 5px)}
+.pl-logo,.pl-bar-bg,.pl-sub{position:relative;z-index:1}.pl-logo{font-style:italic!important;letter-spacing:2px!important}.pl-logo span{color:var(--accent-2)!important}.pl-bar-bg{border-radius:1px!important;background:#171a15!important;border-color:#373c31!important}.pl-bar-fill{background:linear-gradient(90deg,#786019,var(--accent-2))!important;box-shadow:none!important}.pl-sub{color:#73796b!important;letter-spacing:1px!important;text-transform:uppercase}
+.compact-race-hud .race-lead,.compact-race-hud .shift-mini,.compact-race-hud .race-event-badge #race-route{display:none!important}
