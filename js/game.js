@@ -50,41 +50,44 @@ function flashResult(el, win){
   el.classList.add(win?'win-flash':'lose-flash');
 }
 function tapLogo(){
-  state.logoTaps++;
-  if(state.logoTaps===5){
-    state.logoTaps=0;
-    state.coins+=250;
-    state.nitro+=1;
-    showToast("🎁 Секретный бонус синдиката: +250 💰 и 1 нитро");
-    updateHeader(); saveState();
-    checkAchievements();
-  }
+  state.logoTaps=(state.logoTaps||0)+1;
+  if(state.logoTaps<5) return;
+  state.logoTaps=0;
+  const now=Date.now();
+  if(now-(state.secretBonusAt||0)<24*60*60*1000){ showToast('Синдикат уже выдал скрытый бонус сегодня.'); saveState(); return; }
+  state.secretBonusAt=now; state.coins+=250; state.stats.totalEarned+=250; state.nitro+=1;
+  showToast('🎁 Тайник синдиката: +250 SYND и 1 нитро');
+  haptic('success'); updateHeader(); saveState(); checkAchievements();
 }
 
 /* ==================== NAV ==================== */
 const TAB_MAP = {garage:0,shop:1,'duel-select':2,casino:3,profile:4};
 function switchTab(tabId){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const target = document.getElementById('screen-'+tabId);
-  if(target) target.classList.add('active');
-  const buttons=document.querySelectorAll('.nav-btn');
-  if(TAB_MAP[tabId]!==undefined) buttons[TAB_MAP[tabId]].classList.add('active');
+  if(raceCtx && !raceCtx.finished && document.getElementById('screen-race')?.classList.contains('active') && tabId!=='race'){
+    if(!confirm('Заезд ещё не закончен. Покинуть трассу? Вход и топливо не возвращаются.')) return;
+    raceCtx.finished=true; if(raceCtx.raf) cancelAnimationFrame(raceCtx.raf); if(raceCtx.launchIv) clearInterval(raceCtx.launchIv);
+  }
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  const target=document.getElementById('screen-'+tabId); if(!target) return;
+  target.classList.add('active');
+  const buttons=document.querySelectorAll('.nav-btn'); if(TAB_MAP[tabId]!==undefined && buttons[TAB_MAP[tabId]]) buttons[TAB_MAP[tabId]].classList.add('active');
   document.getElementById('main-scroll').scrollTop=0;
-
-  if(tabId==='garage') renderGarage();
-  if(tabId==='shop') renderShop();
-  if(tabId==='duel-select') renderOpponents();
-  if(tabId==='jobs') renderJobs();
-  if(tabId==='profile') renderProfile();
-  if(tabId==='casino') renderCasinoHub();
-  if(tabId==='achievements') renderAchievements();
-  if(tabId==='cases') renderCases();
-  if(tabId==='leaderboard') renderLeaderboard();
-  if(tabId==='settings') renderSettings();
-  if(tabId==='market') openMarket();
-  if(tabId==='chat') openChat();
-  if(tabId==='bank') openBank();
+  if(tabId==='garage')renderGarage();
+  if(tabId==='shop')renderShop();
+  if(tabId==='duel-select')renderOpponents();
+  if(tabId==='jobs')renderJobs();
+  if(tabId==='profile')renderProfile();
+  if(tabId==='casino')renderCasinoHub();
+  if(tabId==='achievements')renderAchievements();
+  if(tabId==='cases')renderCases();
+  if(tabId==='leaderboard')renderLeaderboard();
+  if(tabId==='settings')renderSettings();
+  if(tabId==='market')openMarket();
+  if(tabId==='chat')openChat();
+  if(tabId==='bank')openBank();
+  if(tabId==='districts')renderDistricts();
+  if(tabId==='contracts')renderContracts();
   saveState();
 }
 function switchDuelSub(sub){
@@ -104,76 +107,49 @@ function switchDuelSub(sub){
 }
 
 function updateHeader(){
-  document.getElementById('coins-display').innerText=fmt(state.coins);
-  document.getElementById('lvl-display').innerText=state.level;
+  const coins=document.getElementById('coins-display'),lvl=document.getElementById('lvl-display');
+  if(coins)coins.innerText=fmt(state.coins); if(lvl)lvl.innerText=state.level;
 }
 
 /* ==================== GARAGE / SHOP ==================== */
 function renderGarage(){
   updateHeader();
-  const container=document.getElementById('garage-list');
-  document.getElementById('garage-count').innerText = state.ownedCars.length + " машин";
-  container.innerHTML='';
-  const myCars=carsDB.filter(c=>state.ownedCars.includes(c.id));
+  const container=document.getElementById('garage-list'); if(!container)return;
+  document.getElementById('garage-count').innerText=state.ownedCars.length+' машин';
+  renderGarageTools(); container.innerHTML='';
+  let myCars=carsDB.filter(c=>state.ownedCars.includes(c.id));
+  if(garageSort==='power') myCars.sort((a,b)=>getEffectivePower(b)-getEffectivePower(a));
+  else if(garageSort==='condition') myCars.sort((a,b)=>getCondition(b.id)-getCondition(a.id));
+  else myCars.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
   myCars.forEach(car=>{
-    const isActive=state.activeCarId===car.id;
-    const eff=getEffectivePower(car);
-    const fuel=getFuel(car.id), cond=getCondition(car.id);
-    container.innerHTML += '<div class="car-card" style="'+(isActive?'border-color:var(--accent);':'')+'">'+
-        '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+
-          '<div class="tier-badge">'+car.tier+'</div>'+
-          '<div class="power-badge">'+eff+' л.с.</div>'+
-        '</div>'+
-        '<div class="car-info-box">'+
-          '<div class="car-title">'+car.name+'</div>'+
-          '<div class="car-stats"><div>Статус: <span style="color:'+(isActive?'var(--accent)':'var(--green)')+'">'+(isActive?'Активна':'В гараже')+'</span></div>'+
-          '<div>⛽ <span style="color:'+(fuel<25?'var(--accent)':'#fff')+'">'+fuel+'%</span></div>'+
-          '<div>🔧 <span style="color:'+(cond<40?'var(--accent)':'#fff')+'">'+cond+'%</span></div></div>'+
-          '<div class="btn-row">'+
-            (!isActive ? '<button class="btn btn-select" onclick="selectCar('+car.id+')">ВЫБРАТЬ</button>' : '<button class="btn btn-select selected-mark" disabled>АКТИВНА</button>')+
-            '<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button>'+
-          '</div>'+
-        '</div></div>';
+    const isActive=state.activeCarId===car.id,eff=getEffectivePower(car),fuel=getFuel(car.id),cond=getCondition(car.id);
+    container.innerHTML+='<div class="car-card" style="'+(isActive?'border-color:var(--accent);':'')+'">'+
+      '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+'<div class="tier-badge">'+car.tier+'</div><div class="power-badge">'+eff+' л.с.</div></div>'+
+      '<div class="car-info-box"><div class="car-title">'+car.name+'</div><div class="car-stats"><div>Статус: <span style="color:'+(isActive?'var(--accent-2)':'var(--green)')+'">'+(isActive?'АКТИВНА':'В ГАРАЖЕ')+'</span></div><div>⛽ <span style="color:'+(fuel<25?'var(--danger)':'#fff')+'">'+fuel+'%</span></div><div>🔧 <span style="color:'+(cond<40?'var(--danger)':'#fff')+'">'+cond+'%</span></div></div>'+
+      '<div class="btn-row">'+(!isActive?'<button class="btn btn-select" onclick="selectCar('+car.id+')">ВЫБРАТЬ</button>':'<button class="btn btn-select selected-mark" disabled>АКТИВНА</button>')+'<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button></div></div></div>';
   });
 }
 
 function renderShop(){
-  updateHeader();
-  const container=document.getElementById('shop-list');
-  container.innerHTML='';
-  carsDB.forEach(car=>{
-    const isOwned=state.ownedCars.includes(car.id);
-    const canAfford=state.coins>=car.price;
-    container.innerHTML += '<div class="car-card">'+
-        '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+
-          '<div class="tier-badge">'+car.tier+'</div>'+
-          '<div class="power-badge">'+car.power+' л.с.</div>'+
-        '</div>'+
-        '<div class="car-info-box">'+
-          '<div class="car-title">'+car.name+'</div>'+
-          '<div class="car-stats"><span>'+CAT_LABELS[car.cat]+'</span><span>'+(car.price===0?'Стартовая':fmt(car.price)+' 💰')+'</span></div>'+
-          '<div class="btn-row">'+
-            (isOwned ? '<button class="btn btn-buy" disabled>В ГАРАЖЕ</button>' : '<button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+car.id+')">КУПИТЬ</button>')+
-            '<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button>'+
-          '</div>'+
-        '</div></div>';
+  updateHeader(); const container=document.getElementById('shop-list'); if(!container)return;
+  renderShopToolbar(); container.innerHTML='';
+  let list=carsDB.filter(c=>shopCategory==='all'||c.cat===shopCategory);
+  if(shopSort==='power')list=list.slice().sort((a,b)=>b.power-a.power); else list=list.slice().sort((a,b)=>a.price-b.price);
+  list.forEach(car=>{
+    const isOwned=state.ownedCars.includes(car.id),canAfford=state.coins>=car.price;
+    container.innerHTML+='<div class="car-card"><div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+'<div class="tier-badge">'+car.tier+'</div><div class="power-badge">'+car.power+' л.с.</div></div>'+
+      '<div class="car-info-box"><div class="car-title">'+car.name+'</div><div class="car-stats"><span>'+CAT_LABELS[car.cat]+'</span><span>'+(car.price===0?'Стартовая':fmt(car.price)+' SYND')+'</span></div><div class="btn-row">'+
+      (isOwned?'<button class="btn btn-buy" disabled>В ГАРАЖЕ</button>':'<button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+car.id+')">'+(canAfford?'КУПИТЬ':'НЕ ХВАТАЕТ')+'</button>')+'<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button></div></div></div>';
   });
 }
 function buyCar(carId){
-  const car=carsDB.find(c=>c.id===carId);
-  if(state.ownedCars.includes(carId)) return;
-  if(state.coins<car.price){ showToast("Недостаточно денег"); return; }
-  state.coins-=car.price; state.stats.totalSpent+=car.price;
-  state.ownedCars.push(carId);
-  getFuel(carId); getCondition(carId); getUpg(carId);
-  showToast("🚗 Куплено: "+car.name);
-  updateHeader(); renderShop(); saveState();
-  checkAchievements();
+  const car=carsDB.find(c=>c.id===carId); if(!car||state.ownedCars.includes(carId))return;
+  if(state.coins<car.price){showToast('Недостаточно SYND');haptic('error');return;}
+  state.coins-=car.price;state.stats.totalSpent+=car.price;state.ownedCars.push(carId);getFuel(carId);getCondition(carId);getUpg(carId);
+  showToast('🚗 В гараже: '+car.name);haptic('success');recordContractEvent('buy',1);updateHeader();renderShop();saveState();checkAchievements();
 }
 function selectCar(carId){
-  state.activeCarId=carId;
-  showToast("✅ Активная машина изменена");
-  renderGarage(); saveState();
+  if(!state.ownedCars.includes(carId))return; state.activeCarId=carId;showToast('✅ Активная машина изменена');haptic('light');renderGarage();saveState();
 }
 
 /* ==================== CAR DETAIL ==================== */
@@ -343,17 +319,11 @@ function renderJobs(){
   });
 }
 function doJob(jobId){
-  const job=jobsDB.find(j=>j.id===jobId);
-  const now=Date.now();
-  const readyAt=state.jobCooldowns[jobId]||0;
-  if(now<readyAt) return;
-  awardMoney(job.reward,job.name);
-  addXP(job.xp||5);
-  state.jobCooldowns[jobId]=now+job.cooldown*1000;
-  showToast("💼 "+job.name+": +"+fmt(job.reward)+" 💰");
-  updateHeader();
-  renderJobs();
-  saveState();
+  const job=jobsDB.find(j=>j.id===jobId),now=Date.now(); if(!job)return;
+  const readyAt=state.jobCooldowns[jobId]||0;if(now<readyAt)return;
+  awardMoney(job.reward,job.name);addXP(job.xp||5);state.jobCooldowns[jobId]=now+job.cooldown*1000;
+  if(jobId==='wash') reduceHeat(1); recordContractEvent('job',1); haptic('success');
+  showToast('💼 '+job.name+': +'+fmt(job.reward)+' SYND');updateHeader();renderJobs();saveState();
 }
 setInterval(()=>{
   if(document.getElementById('screen-jobs').classList.contains('active')) renderJobs();
@@ -380,6 +350,7 @@ function clampBet(input, min){
 
 /* ==================== BLACKJACK ==================== */
 let bj = null;
+let rltSpinning=false,slotsSpinning=false,diceRolling=false;
 function bjAdjustBet(delta){ const i=document.getElementById('bj-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
 function bjMaxBet(){ document.getElementById('bj-bet-input').value=state.coins; clampBet(document.getElementById('bj-bet-input'),10); }
 function bjNewDeck(){
@@ -411,6 +382,7 @@ function bjRenderHands(hideDealer){
   document.getElementById('bj-dealer-score').innerText = hideDealer ? '?' : bjCardValue(bj.dealer);
 }
 function bjDeal(){
+  if(bj && !bj.done)return;
   const bet = clampBet(document.getElementById('bj-bet-input'),10);
   if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
   state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
@@ -460,6 +432,7 @@ function bjEnd(result){
   if(result==='win' || result==='bust'){
     if(result==='bust'){ text='💥 ПЕРЕБОР — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
     else {
+      state.stats.blackjackWins=(state.stats.blackjackWins||0)+1;
       payout = isBlackjack ? Math.round(bj.bet*2.5) : bj.bet*2;
       text = isBlackjack ? '🃏 БЛЭКДЖЕК! +'+fmt(payout-bj.bet)+' 💰' : '🏆 ПОБЕДА! +'+fmt(payout-bj.bet)+' 💰';
       msg.style.color='var(--green)';
@@ -501,10 +474,11 @@ function rltClearSelection(){
 function rltSelectNumber(n){ rltClearSelection(); rltSelection={type:'number', value:n}; document.getElementById('rlt-n-'+n).classList.add('selected'); }
 function rltSelectOutside(key){ rltClearSelection(); rltSelection={type:'outside', value:key}; document.getElementById('rlt-o-'+key).classList.add('selected'); }
 function rltSpin(){
+  if(rltSpinning)return;
   if(!rltSelection){ showToast("Выберите ставку: число, цвет или диапазон"); return; }
   const bet = clampBet(document.getElementById('rlt-bet-input'),10);
   if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
-  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();rltSpinning=true;
   const resEl=document.getElementById('rlt-result');
   resEl.style.background='#1a1a24'; resEl.innerText='...';
   setTimeout(()=>{
@@ -532,7 +506,7 @@ function rltSpin(){
       showToast("😔 Не повезло. Число: "+n);
       flashResult(table, false);
     }
-    updateHeader(); saveState(); checkAchievements();
+    rltSpinning=false;updateHeader(); saveState(); checkAchievements();
   }, 900);
 }
 
@@ -549,9 +523,10 @@ function weightedSymbol(){
 }
 const SLOT_PAYOUTS = {'🍒':3,'🍋':4,'🔔':6,'⭐':10,'💎':20,'7️⃣':50};
 function slotsSpin(){
+  if(slotsSpinning)return;
   const bet = clampBet(document.getElementById('slots-bet-input'),10);
   if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
-  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();slotsSpinning=true;
   const reels=[document.getElementById('reel0'),document.getElementById('reel1'),document.getElementById('reel2')];
   reels.forEach(r=>r.classList.add('spin'));
   document.getElementById('slots-message').innerText='';
@@ -576,7 +551,7 @@ function slotsSpin(){
       else { flashResult(table,false); }
       document.getElementById('slots-message').innerText=msg;
       document.getElementById('slots-message').style.color = payout>0?'var(--green)':'var(--text-muted)';
-      updateHeader(); saveState(); checkAchievements();
+      slotsSpinning=false;updateHeader(); saveState(); checkAchievements();
     }
   },80);
 }
@@ -593,10 +568,11 @@ function diceUpdate(){
 function diceAdjustBet(delta){ const i=document.getElementById('dice-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
 function diceMaxBet(){ document.getElementById('dice-bet-input').value=state.coins; clampBet(document.getElementById('dice-bet-input'),10); }
 function diceRoll(){
+  if(diceRolling)return;
   const bet = clampBet(document.getElementById('dice-bet-input'),10);
   if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
   const target = parseInt(document.getElementById('dice-slider').value);
-  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();diceRolling=true;
   const resEl=document.getElementById('dice-result');
   resEl.innerText='...'; resEl.style.color='var(--text-muted)';
   setTimeout(()=>{
@@ -616,7 +592,7 @@ function diceRoll(){
       showToast("🎲 Мимо. Выпало: "+roll);
       flashResult(table,false);
     }
-    updateHeader(); saveState(); checkAchievements();
+    diceRolling=false;updateHeader(); saveState(); checkAchievements();
   }, 500);
 }
 
@@ -628,12 +604,12 @@ const achievementsDB = [
   { id:'all_cars', name:'Весь гараж синдиката', desc:'Собери все машины в игре', icon:'🏁', reward:5000, check:s=>s.ownedCars.length>=27 },
   { id:'lvl10', name:'Авторитет района', desc:'Достигни 10 уровня', icon:'⭐', reward:600, check:s=>s.level>=10 },
   { id:'first_fine', name:'Знакомство с ДПС', desc:'Получи первый штраф от полиции', icon:'🚓', reward:50, check:s=>s.stats.finesCount>=1 },
-  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'🃏', reward:150, check:s=>s.stats.casinoWon>0 && document.getElementById('bj-message') },
+  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'🃏', reward:150, check:s=>(s.stats.blackjackWins||0)>=1 },
   { id:'max_tune', name:'Гараж мечты', desc:'Прокачай тюнинг любой машины до максимума во всех категориях', icon:'🔧', reward:800, check:s=>Object.values(s.upgrades).some(u=>u && TUNE_TYPES.every(t=>u[t.key]>=t.hpPerStage.length)) },
   { id:'earn50k', name:'Барон подполья', desc:'Заработай суммарно 50 000 💰', icon:'💰', reward:1000, check:s=>s.stats.totalEarned>=50000 },
   { id:'daily7', name:'Верный синдикату', desc:'Забирай ежедневную награду 7 дней подряд', icon:'📅', reward:700, check:s=>s.dailyStreak>=7 },
   { id:'secret_car', name:'Тень подполья', desc:'Стань владельцем мифической машины', icon:'👻', reward:1500, check:s=>s.ownedCars.includes(26)||s.ownedCars.includes(27) },
-  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'👑', reward:2000, check:s=>s.stats.wins>0 && s.level>=11 }
+  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'👑', reward:2000, check:s=>(s.stats.bossWins||0)>=1 }
 ];
 function checkAchievements(){
   let any=false;
@@ -742,16 +718,66 @@ async function renderLeaderboard(){
 }
 
 
+
+/* ==================== CARBON CAREER / HEAT / CONTRACTS 5.0 ==================== */
+let garageSort='name',shopCategory='all',shopSort='price';
+const DISTRICTS=[
+  {id:'downtown',name:'Даунтаун',unlockLevel:1,target:0,next:350,desc:'Плотный трафик, короткие прямые и первые серьёзные вызовы.'},
+  {id:'industrial',name:'Промзона',unlockLevel:4,target:350,next:1200,desc:'Широкие дороги, портовые развязки и быстрые машины.'},
+  {id:'canyon',name:'Каньон',unlockLevel:8,target:1200,next:3000,desc:'Ошибка стоит дорого. Здесь репутация решает больше мощности.'},
+  {id:'silverton',name:'Сильвертон',unlockLevel:13,target:3000,next:6000,desc:'Финальный район синдиката: боссы, высокий HEAT и большие ставки.'}
+];
+const CONTRACT_POOL=[
+  {id:'races3',event:'race',target:3,reward:320,name:'На линии',desc:'Заверши 3 уличных заезда.'},
+  {id:'wins2',event:'win',target:2,reward:450,name:'Без права на ошибку',desc:'Выиграй 2 заезда.'},
+  {id:'shift4',event:'perfectShift',target:4,reward:390,name:'Идеальная КПП',desc:'Сделай 4 идеальных переключения.'},
+  {id:'job2',event:'job',target:2,reward:260,name:'Запасной план',desc:'Выполни 2 подработки.'},
+  {id:'nitro1',event:'nitro',target:1,reward:220,name:'На полном баллоне',desc:'Используй нитро в заезде.'},
+  {id:'buy1',event:'buy',target:1,reward:300,name:'Расширение гаража',desc:'Купи одну машину.'}
+];
+function haptic(type='light'){
+  if(!state.settings?.haptics)return;
+  try{const h=window.Telegram?.WebApp?.HapticFeedback;if(!h)return;if(type==='success'||type==='error'||type==='warning')h.notificationOccurred(type);else h.impactOccurred(type==='heavy'?'heavy':type==='medium'?'medium':'light');}catch(_){ }
+}
+function renderGarageTools(){
+  const active=carsDB.find(c=>c.id===state.activeCarId),q=document.getElementById('garage-quick-service'),tb=document.getElementById('garage-toolbar');if(!active||!q||!tb)return;
+  const fuel=getFuel(active.id),cond=getCondition(active.id);
+  q.innerHTML='<div class="quick-service-card" onclick="quickRefuelActive()"><span>Быстрый сервис · топливо</span><b>⛽ '+fuel+'% · до полного</b></div><div class="quick-service-card" onclick="quickRepairActive()"><span>Быстрый сервис · состояние</span><b>🔧 '+cond+'% · ремонт</b></div>';
+  tb.innerHTML=['name','power','condition'].map(k=>'<button class="carbon-chip '+(garageSort===k?'active':'')+'" onclick="setGarageSort(\''+k+'\')">'+({name:'ПО НАЗВАНИЮ',power:'МОЩНОСТЬ',condition:'СОСТОЯНИЕ'}[k])+'</button>').join('');
+}
+function setGarageSort(v){garageSort=['name','power','condition'].includes(v)?v:'name';renderGarage();}
+function quickRefuelActive(){const car=carsDB.find(c=>c.id===state.activeCarId);if(car)refuelCar(car.id);}
+function quickRepairActive(){const car=carsDB.find(c=>c.id===state.activeCarId);if(car)repairCar(car.id);}
+function renderShopToolbar(){
+  const tb=document.getElementById('shop-toolbar');if(!tb)return;const cats=[['all','ВСЕ'],['street','STREET'],['jdm','JDM'],['muscle','MUSCLE'],['sport','SPORT'],['super','SUPER'],['hyper','HYPER'],['legend','BOSS']];
+  tb.innerHTML=cats.map(([k,n])=>'<button class="carbon-chip '+(shopCategory===k?'active':'')+'" onclick="setShopCategory(\''+k+'\')">'+n+'</button>').join('')+'<button class="carbon-chip '+(shopSort==='power'?'active':'')+'" onclick="toggleShopSort()">'+(shopSort==='power'?'↓ МОЩНОСТЬ':'↑ ЦЕНА')+'</button>';
+}
+function setShopCategory(v){shopCategory=v;renderShop();}function toggleShopSort(){shopSort=shopSort==='price'?'power':'price';renderShop();}
+function addHeat(n=1){state.heat=Math.max(0,Math.min(5,(Number(state.heat)||0)+n));}
+function reduceHeat(n=1){state.heat=Math.max(0,(Number(state.heat)||0)-n);}
+function heatLabel(){return ['ЧИСТО','ЗАМЕЧЕН','В РОЗЫСКЕ','ГОРЯЧО','ОБЛАВА','МАКС. РОЗЫСК'][state.heat]||'ЧИСТО';}
+function renderHeatStrip(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='<div class="heat-head"><span>POLICE HEAT · '+heatLabel()+'</span><b>'+state.heat+'/5</b></div><div class="heat-bars">'+[1,2,3,4,5].map(i=>'<i class="'+(i<=state.heat?'on':'')+'"></i>').join('')+'</div>';}
+function dayKeyLocal(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function hashDay(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function getActiveContracts(){const day=dayKeyLocal(),seed=hashDay(day);return CONTRACT_POOL.slice().sort((a,b)=>((hashDay(a.id)^seed)-(hashDay(b.id)^seed))).slice(0,3);}
+function ensureContracts(){const day=dayKeyLocal();if(state.contracts?.day!==day)state.contracts={day,items:{}};if(!state.contracts.items||typeof state.contracts.items!=='object')state.contracts.items={};}
+function contractStatus(c){ensureContracts();const row=state.contracts.items[c.id]||{};const progress=Math.min(c.target,Math.max(0,Number(row.progress)||0));return{progress,done:progress>=c.target,claimed:row.claimed===true};}
+function recordContractEvent(event,amount=1){ensureContracts();let changed=false;getActiveContracts().filter(c=>c.event===event).forEach(c=>{const row=state.contracts.items[c.id]||{progress:0,claimed:false};if(row.claimed)return;row.progress=Math.min(c.target,(Number(row.progress)||0)+Math.max(0,Number(amount)||0));state.contracts.items[c.id]=row;changed=true;});if(changed)saveState();}
+function renderContracts(){ensureContracts();const c=document.getElementById('contract-list');if(!c)return;const now=new Date(),next=new Date(now);next.setHours(24,0,0,0);document.getElementById('contract-reset-label').innerText='Сброс через '+Math.max(1,Math.ceil((next-now)/3600000))+' ч';c.innerHTML='';getActiveContracts().forEach(x=>{const st=contractStatus(x),pct=Math.round(st.progress/x.target*100);c.innerHTML+='<div class="contract-card"><div class="contract-top"><div class="contract-name">'+x.name+'</div><div class="contract-reward">+'+fmt(x.reward)+' SYND</div></div><div class="contract-desc">'+x.desc+'</div><div class="contract-progress"><i style="width:'+pct+'%"></i></div><div class="contract-foot"><span>'+st.progress+' / '+x.target+'</span><span>'+(st.claimed?'ПОЛУЧЕНО':st.done?'ГОТОВО':'В ПРОЦЕССЕ')+'</span></div>'+(st.done&&!st.claimed?'<button class="btn btn-select" style="margin-top:9px;" onclick="claimContract(\''+x.id+'\')">ЗАБРАТЬ НАГРАДУ</button>':'')+'</div>';});}
+function claimContract(id){ensureContracts();const c=getActiveContracts().find(x=>x.id===id);if(!c)return;const st=contractStatus(c);if(!st.done||st.claimed)return;state.contracts.items[id].claimed=true;awardMoney(c.reward,'КОНТРАКТ · '+c.name);haptic('success');saveState();renderContracts();}
+function currentDistrict(){let d=DISTRICTS[0];for(const x of DISTRICTS)if(state.level>=x.unlockLevel)d=x;return d;}
+function recordCareerRace(won,opp){recordContractEvent('race',1);if(won){recordContractEvent('win',1);const gain=Math.max(18,Math.min(180,Math.round((Number(opp?.power)||200)/8)));state.districtRep=(state.districtRep||0)+gain;const d=currentDistrict();state.districtWins[d.id]=(Number(state.districtWins[d.id])||0)+1;addHeat(1);}else if(state.heat>0&&Math.random()<.28)reduceHeat(1);saveState();}
+function renderDistricts(){renderHeatStrip('district-heat');const c=document.getElementById('district-grid');if(!c)return;document.getElementById('district-rep-label').innerText=fmt(state.districtRep)+' REP';c.innerHTML='';DISTRICTS.forEach(d=>{const locked=state.level<d.unlockLevel,pct=d.next<=d.target?100:Math.max(0,Math.min(100,(state.districtRep-d.target)/(d.next-d.target)*100));const wins=Number(state.districtWins[d.id])||0;c.innerHTML+='<div class="district-card '+(locked?'locked':'')+'"><div class="district-kicker">'+(locked?'LOCKED · LVL '+d.unlockLevel:'TERRITORY // '+d.id.toUpperCase())+'</div><h3>'+d.name+'</h3><div class="district-desc">'+d.desc+'</div><div class="district-progress"><i style="width:'+pct+'%"></i></div><div class="district-meta"><span>'+Math.round(pct)+'% КОНТРОЛЯ</span><span>'+wins+' ПОБЕД</span></div></div>';});}
+function recordRaceTelemetry(payload){if(!payload)return;state.recentRaces=Array.isArray(state.recentRaces)?state.recentRaces:[];state.recentRaces.push(payload);state.recentRaces=state.recentRaces.slice(-12);}
+function renderRecentRaceSummary(){const root=document.getElementById('recent-race-summary');if(!root)return;const r=state.recentRaces?.[state.recentRaces.length-1];if(!r){root.innerHTML='';return;}root.innerHTML='<div class="contract-card"><div class="contract-top"><div class="contract-name">Последний заезд · '+escapeHtml(r.route)+'</div><div class="contract-reward" style="color:'+(r.won?'var(--green)':'var(--danger)')+'">'+(r.won?'ПОБЕДА':'ПОРАЖЕНИЕ')+'</div></div><div class="contract-desc">'+escapeHtml(r.opponent)+' · '+Number(r.time).toFixed(2)+' c · '+Math.round(r.topSpeed)+' км/ч · идеальных SHIFT: '+r.perfectShifts+(r.nitroUsed?' · NITRO':'')+'</div></div>';}
 /* ==================== SETTINGS ==================== */
 function renderSettings(){
-  document.getElementById('set-sound').classList.toggle('on', state.settings.sound);
-  document.getElementById('set-anim').classList.toggle('on', state.settings.animations);
-  const el = document.getElementById('last-saved-text');
-  if(el) el.innerText = state.lastSaved ? new Date(state.lastSaved).toLocaleTimeString('ru-RU') : '—';
+  const map={sound:'set-sound',animations:'set-anim',haptics:'set-haptics',reducedMotion:'set-reduced-motion',compactHud:'set-compact-hud'};
+  Object.entries(map).forEach(([key,id])=>document.getElementById(id)?.classList.toggle('on',!!state.settings[key]));
+  const el=document.getElementById('last-saved-text');if(el)el.innerText=state.lastSaved?new Date(state.lastSaved).toLocaleTimeString('ru-RU'):'—';
 }
 function toggleSetting(key){
-  state.settings[key] = !state.settings[key];
-  renderSettings(); saveState();
+  if(!(key in state.settings))return;state.settings[key]=!state.settings[key];applyUiSettings();haptic('light');renderSettings();saveState();
 }
 
 /* ==================== DAILY REWARD ==================== */
@@ -800,34 +826,15 @@ function closeDailyModal(){ document.getElementById('daily-modal-root').innerHTM
 
 /* ==================== PROFILE ==================== */
 function renderProfile(){
-  updateHeader();
-  updateAvatarUI();
-  document.getElementById('profile-name').innerText = state.playerName;
-  document.getElementById('profile-lvl').innerText = state.level;
-  document.getElementById('p-balance').innerText = fmt(state.coins);
-  document.getElementById('p-cars').innerText = state.ownedCars.length;
-  document.getElementById('p-races').innerText = state.stats.races;
-  const wr = state.stats.races>0 ? Math.round(state.stats.wins/state.stats.races*100) : 0;
-  document.getElementById('p-winrate').innerText = wr+"%";
-  document.getElementById('p-wins').innerText = state.stats.wins;
-  document.getElementById('p-losses').innerText = state.stats.losses;
-  document.getElementById('p-earned').innerText = fmt(state.stats.totalEarned);
-  document.getElementById('p-fines').innerText = state.stats.finesCount;
-  const need = xpNeeded(state.level);
-  document.getElementById('xp-text').innerText = state.xp+'/'+need;
-  document.getElementById('xp-fill').style.width = Math.round(state.xp/need*100)+'%';
-  document.getElementById('ach-progress-sub').innerText = Object.keys(state.achievements).length+'/'+achievementsDB.length;
-  document.getElementById('hub-nitro-count').innerText = state.nitro;
-  document.getElementById('daily-hub-sub').innerText = checkDailyEligible() ? 'Забрать!' : 'Уже забрано';
-  const licBox = document.getElementById('license-status-box');
-  if(licBox){
-    if(state.licenseSuspended){
-      licBox.innerHTML = '<div class="pre-race-line"><span>🚫 Водительские права изъяты</span></div>'+
-        '<div class="empty-note" style="padding:4px 0 10px;text-align:left;">Заезды недоступны, пока не выкупишь права обратно.</div>'+
-        '<button class="big-btn" onclick="buyBackLicense()">Выкупить права за '+fmt(licensePrice())+' 💰</button>';
-    } else {
-      licBox.innerHTML = '<div class="pre-race-line"><span>✅ Права в порядке</span><b style="color:var(--green)">Можно гонять</b></div>';
-    }
+  updateHeader();updateAvatarUI();ensureContracts();
+  document.getElementById('profile-name').innerText=state.playerName;document.getElementById('profile-lvl').innerText=state.level;document.getElementById('p-balance').innerText=fmt(state.coins);document.getElementById('p-cars').innerText=state.ownedCars.length;document.getElementById('p-races').innerText=state.stats.races;
+  const wr=state.stats.races>0?Math.round(state.stats.wins/state.stats.races*100):0;document.getElementById('p-winrate').innerText=wr+'%';document.getElementById('p-wins').innerText=state.stats.wins;document.getElementById('p-losses').innerText=state.stats.losses;document.getElementById('p-earned').innerText=fmt(state.stats.totalEarned);document.getElementById('p-fines').innerText=state.stats.finesCount;
+  const need=xpNeeded(state.level);document.getElementById('xp-text').innerText=state.xp+'/'+need;document.getElementById('xp-fill').style.width=Math.round(state.xp/need*100)+'%';document.getElementById('ach-progress-sub').innerText=Object.keys(state.achievements).length+'/'+achievementsDB.length;document.getElementById('hub-nitro-count').innerText=state.nitro;document.getElementById('daily-hub-sub').innerText=checkDailyEligible()?'Забрать!':'Уже забрано';
+  const activeContracts=getActiveContracts(),done=activeContracts.filter(c=>contractStatus(c).done).length;document.getElementById('contract-progress-sub').innerText=done+'/'+activeContracts.length+' выполнено';document.getElementById('district-progress-sub').innerText=fmt(state.districtRep)+' REP';
+  renderHeatStrip('profile-heat'); renderRecentRaceSummary();
+  const licBox=document.getElementById('license-status-box');if(licBox){
+    if(state.licenseSuspended)licBox.innerHTML='<div class="pre-race-line"><span>🚫 Водительские права изъяты</span></div><div class="empty-note" style="padding:4px 0 10px;text-align:left;">Заезды недоступны, пока не восстановишь права.</div><button class="big-btn" onclick="buyBackLicense()">ВОССТАНОВИТЬ · '+fmt(licensePrice())+' SYND</button>';
+    else licBox.innerHTML='<div class="pre-race-line"><span>✅ Права в порядке</span><b style="color:var(--green)">ДОПУСК К ЗАЕЗДАМ</b></div>';
   }
 }
 

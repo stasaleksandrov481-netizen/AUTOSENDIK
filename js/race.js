@@ -12,7 +12,7 @@ const GEAR_LABELS=['N','1','2','3','4','5','6'];
 function raceTuneProfile(car){
   const upg=typeof getUpg==='function'?getUpg(car.id):{};
   const sum=Object.values(upg||{}).reduce((a,b)=>a+(Number(b)||0),0);
-  const engine=Number(upg.engine||0), trans=Number(upg.transmission||0), turbo=Number(upg.turbo||0);
+  const engine=Number(upg.engine||0), trans=Number(upg.gearbox||0), turbo=Number(upg.turbo||0);
   const grip=Number(upg.tires||upg.grip||0);
   /* КПП расширяет окна, двигатель/турбо ускоряют набор оборотов. */
   const transLevel=Math.max(0,trans);
@@ -59,17 +59,18 @@ function prepareRace(target,mode){
   }
   const profile=raceTuneProfile(car);
   const route=['Промзона','Ночной проспект','Портовый обход','Тоннель','Старая эстакада'][Math.floor(Math.random()*5)];
-  const radarChance=opp.pvp?0:0.12+(opp.boss?.06:0);
+  const radarChance=opp.pvp?0:Math.min(.48,0.08+(opp.boss?.06:0)+(Number(state.heat)||0)*.055);
   const rawPower=getEffectivePower(car);
   const maxSpeed=Math.round(Math.max(170,Math.min(380,175+rawPower*.115)));
+  const aiMaxSpeed=Math.round(Math.max(165,Math.min(380,175+(Number(opp.power)||rawPower)*.115)));
   const trackLength=1200;
   raceCtx={
     opp,mode,fee,fuelCost,useNitro:false,profile,route,radarChance,
     radar:false,gas:false,brake:false,gear:1,rpm:1100,speed:0,distance:0,
     aiDistance:0,aiSpeed:0,aiGear:1,aiRpm:1200,aiShiftTimer:0,aiSkill:0,aiFinishedAt:0,playerFinishedAt:0,lastLead:0,lastPassAt:0,trackLength:trackLength,
     finished:false,launchMode:null,shiftCount:0,goodShifts:0,perfectShifts:0,errors:0,elapsed:0,actionTimer:0,actionText:'',
-    lastTs:0,raf:null,launchIv:null,uiTimer:0,uiInterval:0,
-    maxSpeed,redline:8500,startLocked:false,startTimer:0
+    lastTs:0,raf:null,launchIv:null,uiTimer:0,uiInterval:0,displayRpm:null,displaySpeed:null,
+    maxSpeed,aiMaxSpeed,redline:8500,startLocked:false,startTimer:0,nitroActive:false,nitroTimer:0,nitroUsed:false,topSpeed:0
   };
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-race').classList.add('active');
@@ -113,6 +114,7 @@ function chooseLaunch(mode){
   const center=0.67;
   const error=Math.abs(pos-center);
   const quality=Math.max(0,1-error/.30);
+  if(quality>=.90){state.raceStats.perfectStarts=(state.raceStats.perfectStarts||0)+1;haptic('success');}
   if(mode==='spin'){
     state.raceStats.hardLaunches=(state.raceStats.hardLaunches||0)+1;
     c.rpm=4700+quality*900;c.speed=10+quality*8;c.distance=1.2+quality*1.2;
@@ -141,7 +143,7 @@ function showRaceCockpit(){
 
   '<div class="cockpit3"><div class="analog-gauge tacho3"><div class="gauge-caption">RPM ×1000</div><div class="dial zone-dial" id="rpm-dial"><div class="dial-ticks"></div><div class="dial-needle" id="rpm-needle"></div><div class="dial-hub"></div><div class="gear3" id="race-gear">1</div><div class="gauge-center"><b id="race-rpm">1.1</b><span>×1000</span></div></div><div class="gauge-scale"><span>0</span><span>4</span><span>8.5</span></div></div>'+
   '<div class="analog-gauge speed3"><div class="gauge-caption">SPEED</div><div class="dial speed-dial zone-dial" id="speed-dial"><div class="dial-ticks"></div><div class="dial-needle speed-needle" id="speed-needle"></div><div class="dial-hub"></div><div class="gauge-center"><b id="race-speed">0</b><span>KM/H</span></div></div><div class="gauge-scale"><span>0</span><span>'+c.maxSpeed+'</span></div></div></div>'+
-  '<div class="race-controls"><button class="race-control pedal brake" id="brake-btn" onpointerdown="raceHold(\'brake\',true)" onpointerup="raceHold(\'brake\',false)" onpointercancel="raceHold(\'brake\',false)" onpointerleave="raceHold(\'brake\',false)"><span class="pedal-face">BRAKE</span><small>ТОРМОЗ</small></button><button class="race-control pedal gas" id="gas-btn" onpointerdown="raceHold(\'gas\',true)" onpointerup="raceHold(\'gas\',false)" onpointercancel="raceHold(\'gas\',false)" onpointerleave="raceHold(\'gas\',false)"><span class="pedal-face">GAS</span><small>ГАЗ</small></button><button class="race-control shift" id="shift-btn" onclick="manualShift()"><span class="shift-face">↑</span><small id="shift-label">SHIFT · 1→2</small></button></div>'+
+  '<div class="race-controls"><button class="race-control pedal brake" id="brake-btn" onpointerdown="raceHold(\'brake\',true)" onpointerup="raceHold(\'brake\',false)" onpointercancel="raceHold(\'brake\',false)" onpointerleave="raceHold(\'brake\',false)"><span class="pedal-face">BRAKE</span><small>ТОРМОЗ</small></button><button class="race-control pedal gas" id="gas-btn" onpointerdown="raceHold(\'gas\',true)" onpointerup="raceHold(\'gas\',false)" onpointercancel="raceHold(\'gas\',false)" onpointerleave="raceHold(\'gas\',false)"><span class="pedal-face">GAS</span><small>ГАЗ</small></button><button class="race-control shift" id="shift-btn" onclick="manualShift()"><span class="shift-face">↑</span><small id="shift-label">SHIFT · 1→2</small></button><button class="race-control nitro" id="nitro-btn" onclick="useRaceNitro()"><span class="nitro-face">N₂O</span><small id="nitro-label">'+state.nitro+' ЗАРЯД.</small><div class="race-nitro-bar"><i id="nitro-bar-fill"></i></div></button></div>'+
   '<div class="shift-mini" id="shift-help">Жёлтая — хорошо · зелёная — идеально</div></div>';
   c.gas=false;c.brake=false;c.startLocked=true;c.startTimer=0;c.lastTs=performance.now();c.uiTimer=0;
   updateRaceZones();updateRaceHUD();
@@ -194,15 +196,15 @@ function manualShift(){
   const good=Math.abs(p-perfectCenter)<=y;
   c.gear=Math.min(6,c.gear+1);
   if(perfect){
-    c.perfectShifts++;c.goodShifts++;showAction('ИДЕАЛЬНЫЙ SHIFT!');c.rpm=Math.max(3000,c.rpm*c.profile.shiftRecovery);
+    c.perfectShifts++;c.goodShifts++;recordContractEvent('perfectShift',1);haptic('success');showAction('ИДЕАЛЬНЫЙ SHIFT!');c.rpm=Math.max(3000,c.rpm*c.profile.shiftRecovery);
     showShiftText('ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ',true);
   }else if(good){
-    c.goodShifts++;showAction('ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ');c.rpm=Math.max(2700,c.rpm*c.profile.shiftRecovery*.94);
+    c.goodShifts++;haptic('medium');showAction('ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ');c.rpm=Math.max(2700,c.rpm*c.profile.shiftRecovery*.94);
     showShiftText('ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ',false);
   }else if(p>.92){
-    c.errors++;showAction('ПОЗДНИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(3000,c.rpm*.54);showShiftText('ПОЗДНО · ПОТЕРЯ ТЯГИ',false);
+    c.errors++;haptic('warning');showAction('ПОЗДНИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(3000,c.rpm*.54);showShiftText('ПОЗДНО · ПОТЕРЯ ТЯГИ',false);
   }else{
-    c.errors++;showAction('РАННИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(2100,c.rpm*.68);showShiftText('РАНО · ПОТЕРЯ ТЯГИ',false);
+    c.errors++;haptic('warning');showAction('РАННИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(2100,c.rpm*.68);showShiftText('РАНО · ПОТЕРЯ ТЯГИ',false);
   }
   updateRaceHUD();
 }
@@ -226,6 +228,7 @@ function simulateRace(dt){
   const c=raceCtx;
   if(c.startLocked) return;
   c.elapsed+=dt;
+  if(c.nitroTimer>0){c.nitroTimer=Math.max(0,c.nitroTimer-dt);c.nitroActive=c.nitroTimer>0;}
   if(c.actionTimer>0){ c.actionTimer-=dt; if(c.actionTimer<=0){ const a=document.getElementById('race-action'); if(a)a.classList.remove('show'); } }
   const p=c.profile,gear=c.gear;
   const ratios=[0,.58,.72,.82,.90,.96,1];
@@ -238,13 +241,13 @@ function simulateRace(dt){
     const band=Math.max(.15,Math.min(1,rpmNorm));
     const launchTraction=(c.launchMode==='spin'&&c.distance<9)?c.launchGrip:.99;
     /* Сильный старт + быстрый набор скорости, без улиточного темпа. */
-    const baseAccel=(c.maxSpeed*.92)*p.accel*ratio*(.52+band*.82)*launchTraction;
+    const nitroBoost=c.nitroActive?1.34:1;
+    const baseAccel=(c.maxSpeed*.92)*p.accel*ratio*(.52+band*.82)*launchTraction*nitroBoost;
     const resistance=.020*c.speed*c.speed/c.maxSpeed;
     c.speed+=Math.max(0,baseAccel-resistance)*dt;
     if(gear===6){
-      /* На 6-й передаче двигатель не "наказывает" игрока падением скорости. */
-      const cruise=c.maxSpeed*(.985);
-      if(c.speed<cruise)c.speed+=Math.min((cruise-c.speed)*1.7*dt,c.maxSpeed*.12*dt);
+      /* 6-я передача — длинная: скорость не прыгает к максимальной
+         только из-за включения 6-й. Она продолжает расти физически. */
       c.rpm=Math.min(c.redline*.995,c.rpm);
     }
   }else{
@@ -255,7 +258,9 @@ function simulateRace(dt){
     c.rpm=Math.max(1100,c.rpm-3000*dt);
     c.speed=Math.max(0,c.speed-70*dt);
   }
-  c.speed=Math.max(0,Math.min(c.maxSpeed,c.speed));
+  const speedCap=c.nitroActive?Math.min(400,c.maxSpeed*1.045):c.maxSpeed;
+  c.speed=Math.max(0,Math.min(speedCap,c.speed));
+  c.topSpeed=Math.max(c.topSpeed||0,c.speed);
   /* Реальная дистанция: км/ч -> м/с. Финиш только на физическом конце 1200 м. */
   c.distance=Math.min(c.trackLength,c.distance+(c.speed/3.6)*dt);
 
@@ -266,10 +271,10 @@ function simulateRace(dt){
   const ratioPower=Math.max(.72,Math.min(1.28,c.opp.power/Math.max(myPower,1)));
   const aiPace=Math.max(.88,Math.min(1.02,.95+(ratioPower-1)*.12));
   const targetVariation=1+Math.sin(c.elapsed*.63)*.025+Math.sin(c.elapsed*1.71)*.012;
-  const aiTarget=Math.min(c.maxSpeed*.98, c.maxSpeed*aiPace*c.aiSkill*targetVariation);
+  const aiTarget=Math.min(c.aiMaxSpeed*.985,c.aiMaxSpeed*aiPace*c.aiSkill*targetVariation);
   c.aiSpeed+=((aiTarget-c.aiSpeed)*1.25*dt);
   if(c.elapsed<c.aiStartDelay)c.aiSpeed*=Math.max(0,1-dt*5);
-  c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*.98,c.aiSpeed));
+  c.aiSpeed=Math.max(0,Math.min(c.aiMaxSpeed*.985,c.aiSpeed));
   c.aiDistance=Math.min(c.trackLength,c.aiDistance+(c.aiSpeed/3.6)*dt);
 
   /* Важно: соперник, пересёкший финиш, не закрывает экран. Игрок обязан
@@ -284,6 +289,14 @@ function simulateRace(dt){
     finishRace(!c.aiFinishedAt || c.playerFinishedAt<=c.aiFinishedAt,c);return;
   }
 }
+function useRaceNitro(){
+  const c=raceCtx;if(!c||c.finished||c.startLocked)return;
+  if(c.nitroUsed){showAction('NITRO УЖЕ ИСПОЛЬЗОВАНО');return;}
+  if(state.nitro<=0){showAction('НЕТ ЗАРЯДОВ N₂O');haptic('error');return;}
+  state.nitro--;c.nitroUsed=true;c.nitroActive=true;c.nitroTimer=2.4;state.raceStats.nitroUses=(state.raceStats.nitroUses||0)+1;
+  recordContractEvent('nitro',1);showAction('N₂O · ПОЛНЫЙ БУСТ');haptic('heavy');saveState();updateRaceHUD();
+}
+
 function updateRaceZones(){
   const c=raceCtx;if(!c)return;
   const greenDeg=Math.max(7,Math.min(28,c.profile.greenWidth*360));
@@ -292,23 +305,36 @@ function updateRaceZones(){
   const center=0.72*264-132;
   const start=center-yellowDeg/2,end=center+yellowDeg/2;
   const gs=center-greenDeg/2,ge=center+greenDeg/2;
-  const bg=`conic-gradient(from 218deg, transparent 0 0, transparent 0%, transparent 0%, transparent 100%)`;
-  [document.getElementById('rpm-dial'),document.getElementById('speed-dial')].forEach(d=>{
-    if(!d)return;
+  const d=document.getElementById('rpm-dial');
+  if(d){
     d.style.setProperty('--yellow-start',start+'deg');
     d.style.setProperty('--yellow-end',end+'deg');
     d.style.setProperty('--green-start',gs+'deg');
     d.style.setProperty('--green-end',ge+'deg');
-  });
+  }
+  const speedDial=document.getElementById('speed-dial');
+  if(speedDial){
+    speedDial.style.setProperty('--yellow-start','999deg');
+    speedDial.style.setProperty('--yellow-end','1000deg');
+    speedDial.style.setProperty('--green-start','1001deg');
+    speedDial.style.setProperty('--green-end','1002deg');
+  }
 }
 function updateRaceHUD(){
   const c=raceCtx;if(!c)return;
   const rpmEl=document.getElementById('race-rpm'),gear=document.getElementById('race-gear'),sp=document.getElementById('race-speed'),me=document.getElementById('map-me'),ai=document.getElementById('map-ai');
   if(rpmEl)rpmEl.innerText=(c.rpm/1000).toFixed(1);
+  /* Визуальные стрелки инерционные: реальные RPM/скорость меняются сразу,
+     но стрелка догоняет значение плавно, поэтому после переключения нет резкого скачка. */
+  const smoothK=0.22;
+  if(c.displayRpm==null)c.displayRpm=c.rpm;
+  if(c.displaySpeed==null)c.displaySpeed=c.speed;
+  c.displayRpm += (c.rpm-c.displayRpm)*smoothK;
+  c.displaySpeed += (c.speed-c.displaySpeed)*smoothK;
   const rpmNeedle=document.getElementById('rpm-needle');
-  if(rpmNeedle)rpmNeedle.style.transform='rotate('+(-132+(c.rpm/c.redline)*264)+'deg)';
+  if(rpmNeedle)rpmNeedle.style.transform='rotate('+(-132+(c.displayRpm/c.redline)*264)+'deg)';
   const speedNeedle=document.getElementById('speed-needle');
-  if(speedNeedle)speedNeedle.style.transform='rotate('+(-132+(c.speed/Math.max(c.maxSpeed,1))*264)+'deg)';
+  if(speedNeedle)speedNeedle.style.transform='rotate('+(-132+(c.displaySpeed/Math.max(c.maxSpeed,1))*264)+'deg)';
   const fx=document.getElementById('speed-effects');if(fx)fx.classList.toggle('fast',c.speed>c.maxSpeed*.55);
   if(gear)gear.innerText=c.gear;
   if(sp)sp.innerText=Math.round(c.speed);
@@ -338,6 +364,8 @@ function updateRaceHUD(){
   if(help)help.innerText=c.gear>=6?'6-я передача · МАКСИМУМ · держи газ':'Передача '+c.gear+' · жёлтая — хорошо · зелёная — идеально';
   const sb=document.getElementById('shift-btn');if(sb)sb.classList.toggle('locked',c.gear>=6);
   const sl=document.getElementById('shift-label');if(sl)sl.innerText=c.gear>=6?'6 · MAX':('SHIFT · '+c.gear+'→'+Math.min(6,c.gear+1));
+  const nb=document.getElementById('nitro-btn'),nl=document.getElementById('nitro-label'),nf=document.getElementById('nitro-bar-fill');
+  if(nb)nb.classList.toggle('used',c.nitroUsed||state.nitro<=0);if(nl)nl.innerText=c.nitroUsed?'ИСПОЛЬЗОВАНО':state.nitro+' ЗАРЯД.';if(nf)nf.style.width=(c.nitroActive?Math.round(c.nitroTimer/2.4*100):0)+'%';
 }
 function finishRace(playerWins,c){
   if(c.finished)return;
@@ -354,7 +382,7 @@ function finishRace(playerWins,c){
   const completedAttempt = c.mode==='tour' && tourRun && tourRun.day===todayKey ? Math.max(1,Number(tourRun.count)||1) : 1;
   const tourRewardMult = c.mode==='tour' ? ([1,.72,.48][Math.min(2,completedAttempt-1)]||.48) : 1;
   if(playerWins){
-    state.stats.wins++;state.winStreak=(state.winStreak||0)+1;
+    state.stats.wins++;if(opp.boss)state.stats.bossWins=(state.stats.bossWins||0)+1;state.winStreak=(state.winStreak||0)+1;
     /* Экономика прозрачная: выплата РОВНО такая, какая была показана до старта.
        Никаких скрытых бонусов за серию, идеальные переключения или старт. */
     reward=Math.max(0,Math.round(opp.reward*tourRewardMult));
@@ -365,19 +393,20 @@ function finishRace(playerWins,c){
     if(opp.pvp)resolvePvpChallenge(opp.row,false,0);
   }
   const id=String(opp.id);state.raceHistory=(state.raceHistory||[]).filter(x=>x!==id);state.raceHistory.push(id);state.raceHistory=state.raceHistory.slice(-8);
+  recordCareerRace(playerWins,opp);recordRaceTelemetry({ts:Date.now(),won:playerWins,opponent:opp.name,route:c.route,time:c.elapsed,topSpeed:c.topSpeed||c.speed,perfectShifts:c.perfectShifts,nitroUsed:c.nitroUsed});
   addXP(xp);awardMoney(reward,playerWins?'ПОБЕДА В ЗАЕЗДЕ':'УТЕШИТЕЛЬНЫЙ ПРИЗ');
   const el=document.getElementById('race-content');
   el.innerHTML='<div class="race3"><div class="result-box '+(playerWins?'win':'lose')+'"><div class="result-title">'+(playerWins?'🏆 ФИНИШ ПЕРВЫМ':'💥 ФИНИШ ВТОРЫМ')+'</div>'+
     '<div class="result-sub">'+(playerWins?'Ты пересёк физическую линию FINISH первым.':'Ты пересёк физическую линию FINISH после соперника.')+'</div>'+
     '<div class="result-reward">'+(reward>0?'+':'')+fmt(reward)+' SYND</div>'+
-    '<div class="xp-gain-box">⭐ +'+xp+' XP · Идеальных переключений: '+c.perfectShifts+'</div></div>'+
+    '<div class="xp-gain-box">⭐ +'+xp+' XP · '+c.elapsed.toFixed(2)+' c · MAX '+Math.round(c.topSpeed||c.speed)+' км/ч · PERFECT SHIFT '+c.perfectShifts+'</div></div>'+
     '<div class="list-container"><button class="btn btn-select" onclick="switchTab(\'duel-select\')">НОВАЯ СЛУЧАЙНАЯ ПАРА</button><button class="btn btn-ghost" onclick="switchTab(\'garage\')">В ГАРАЖ</button></div></div>';
   updateHeader();saveState();checkAchievements();
   if(!opp.pvp&&Math.random()<c.radarChance){state.raceStats.radarEvents=(state.raceStats.radarEvents||0)+1;setTimeout(triggerPoliceStop,700);}
 }
 function triggerPoliceStop(){
   const root=document.getElementById('police-modal-root');if(!root)return;
-  state.raceStats.policeStops=(state.raceStats.policeStops||0)+1;
+  state.raceStats.policeStops=(state.raceStats.policeStops||0)+1;haptic('warning');
   const line=POLICE_LINES[Math.floor(Math.random()*POLICE_LINES.length)];
   root.innerHTML='<div class="modal-overlay"><div class="police-modal"><div class="police-lights"><span></span><span></span></div><div class="police-title">🚓 РАДАР СРАБОТАЛ</div><div class="police-line">'+line+'</div>'+
     '<button class="big-btn police-opt negotiate" onclick="policeChoice(\'negotiate\')">🤝 Договориться</button><button class="big-btn police-opt pay" onclick="policeChoice(\'pay\')">💳 Заплатить штраф ('+fmt(POLICE_BASE_FINE)+' SYND)</button><button class="big-btn police-opt refuse" onclick="policeChoice(\'refuse\')">🙅 Спорить</button></div></div>';
@@ -385,8 +414,8 @@ function triggerPoliceStop(){
 function closePoliceModal(){const r=document.getElementById('police-modal-root');if(r)r.innerHTML='';}
 function policeChoice(choice){
   let resultHtml='';
-  if(choice==='pay'){const fine=POLICE_BASE_FINE;state.coins=Math.max(0,state.coins-fine);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Штраф оплачен. Можно ехать дальше.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}
-  else if(choice==='negotiate'){if(Math.random()<.55){const bribe=Math.round(POLICE_BASE_FINE*.4)+Math.round(Math.random()*80);state.coins=Math.max(0,state.coins-bribe);resultHtml='<div class="police-line">Инспектор махнул рукой. Вопрос закрыт.</div><div class="result-reward">-'+fmt(bribe)+' SYND</div>';}else{const fine=Math.round(POLICE_BASE_FINE*1.8);state.coins=Math.max(0,state.coins-fine);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Договориться не вышло. Штраф увеличен.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}}
+  if(choice==='pay'){const fine=POLICE_BASE_FINE;state.coins=Math.max(0,state.coins-fine);reduceHeat(2);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Штраф оплачен. Можно ехать дальше.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}
+  else if(choice==='negotiate'){if(Math.random()<.55){const bribe=Math.round(POLICE_BASE_FINE*.4)+Math.round(Math.random()*80);state.coins=Math.max(0,state.coins-bribe);reduceHeat(1);resultHtml='<div class="police-line">Инспектор махнул рукой. Вопрос закрыт.</div><div class="result-reward">-'+fmt(bribe)+' SYND</div>';}else{const fine=Math.round(POLICE_BASE_FINE*1.8);state.coins=Math.max(0,state.coins-fine);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Договориться не вышло. Штраф увеличен.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}}
   else{if(Math.random()<.35){resultHtml='<div class="police-line">Инспектор не стал связываться.</div><div class="result-reward" style="color:var(--green)">Уехал без штрафа</div>';}else{state.hasLicense=false;state.licenseSuspended=true;state.licenseSuspendCount=(state.licenseSuspendCount||0)+1;resultHtml='<div class="police-line">Права изъяты. Но игра не загнала тебя в тупик: заработок доступен в Подработке и Банке.</div><div class="result-reward">🚫 '+fmt(licensePrice())+' SYND на восстановление</div>';}}
   updateHeader();saveState();
   const root=document.getElementById('police-modal-root');
@@ -399,3 +428,22 @@ function buyBackLicense(){
   state.coins-=price;state.stats.totalSpent+=price;state.hasLicense=true;state.licenseSuspended=false;
   showToast('✅ Права восстановлены');updateHeader();saveState();renderProfile();
 }
+
+
+/* Desktop controls: W/↑ gas, S/↓ brake, Space/E shift, N/Shift nitro. */
+(function bindRaceKeyboard(){
+  const active=()=>document.getElementById('screen-race')?.classList.contains('active')&&raceCtx&&!raceCtx.finished;
+  window.addEventListener('keydown',e=>{
+    if(!active()||e.repeat)return;
+    if(['ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+    if(e.code==='KeyW'||e.code==='ArrowUp')raceHold('gas',true);
+    if(e.code==='KeyS'||e.code==='ArrowDown')raceHold('brake',true);
+    if(e.code==='Space'||e.code==='KeyE')manualShift();
+    if(e.code==='KeyN'||e.code==='ShiftLeft'||e.code==='ShiftRight')useRaceNitro();
+  },{passive:false});
+  window.addEventListener('keyup',e=>{
+    if(!active())return;
+    if(e.code==='KeyW'||e.code==='ArrowUp')raceHold('gas',false);
+    if(e.code==='KeyS'||e.code==='ArrowDown')raceHold('brake',false);
+  });
+})();
