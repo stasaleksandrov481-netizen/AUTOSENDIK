@@ -53,10 +53,10 @@ async function requireOnlineWrite(feature='Онлайн-функция'){
   if(!sb) initSupabase();
   if(!onlineAuthReady){
     const ok=await ensureOnlineAuth();
-    if(!ok){ showToast('🔒 '+feature+': включи Anonymous Sign-Ins в Supabase Auth'); return false; }
+    if(!ok){ showToast(' '+feature+': включи Anonymous Sign-Ins в Supabase Auth'); return false; }
   }
   const synced=await syncPlayerProfile(true);
-  if(!synced){ showToast('🔒 '+feature+': профиль не синхронизирован'); return false; }
+  if(!synced){ showToast(' '+feature+': профиль не синхронизирован'); return false; }
   return true;
 }
 
@@ -140,14 +140,14 @@ function subscribeMarket(){
 }
 async function refreshMarket(){
   const statusEl = document.getElementById('market-status');
-  if(!sb){ if(statusEl) statusEl.innerText='⚠️ Рынок недоступен (нет подключения к серверу)'; return; }
+  if(!sb){ if(statusEl) statusEl.innerText=' Рынок недоступен (нет подключения к серверу)'; return; }
   if(statusEl) statusEl.innerText='Загрузка лотов…';
   try{
     const {data, error} = await sb.from('market_cars').select('*').eq('status','active').order('id',{ascending:false}).limit(60);
     if(error) throw error;
     renderMarketList(data||[]);
     if(statusEl) statusEl.innerText = (data&&data.length) ? 'Активных лотов: '+data.length : 'Рынок пуст';
-  }catch(e){ console.warn(e); if(statusEl) statusEl.innerText='⚠️ Не удалось загрузить рынок'; }
+  }catch(e){ console.warn(e); if(statusEl) statusEl.innerText=' Не удалось загрузить рынок'; }
   claimSoldProceeds();
   renderMyListings();
 }
@@ -162,7 +162,7 @@ function renderMarketList(rows){
     c.innerHTML += '<div class="listing-card">'+
       '<div class="listing-head"><span class="listing-name">'+escapeHtml(car.name)+'</span>'+(isMine?'<span class="mine-tag">Ваш лот</span>':'')+'</div>'+
       '<div class="listing-meta">Продавец: '+escapeHtml(r.seller_name||'Игрок')+' · '+car.tier+' · '+car.power+' л.с.</div>'+
-      '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' 💰</span>'+
+      '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' </span>'+
       (isMine
         ? '<button class="sell-btn" onclick="cancelListing('+r.id+')">Снять с продажи</button>'
         : '<button class="btn btn-buy" style="width:auto;padding:8px 14px;" onclick="buyListing('+r.id+')">КУПИТЬ</button>')+
@@ -210,9 +210,9 @@ async function listCarForSale(carId, price){
     if(error) throw error;
     state.ownedCars = state.ownedCars.filter(id=>id!==carId);
     if(state.activeCarId===carId) state.activeCarId = state.ownedCars[0];
-    showToast('🏷️ "'+car.name+'" выставлена на рынок за '+fmt(price)+' 💰');
+    showToast(' "'+car.name+'" выставлена на рынок за '+fmt(price)+' ');
     updateHeader(); saveState(); refreshMarket(); renderSellPicker();
-  }catch(e){ console.warn(e); showToast('⚠️ Не удалось выставить лот (проверь настройки Supabase)'); }
+  }catch(e){ console.warn(e); showToast(' Не удалось выставить лот (проверь настройки Supabase)'); }
 }
 async function cancelListing(id){
   if(!sb) return;
@@ -227,7 +227,7 @@ async function cancelListing(id){
     if(!state.ownedCars.includes(carId)) state.ownedCars.push(carId);
     showToast('Лот снят, машина вернулась в гараж');
     saveState(); refreshMarket();
-  }catch(e){ console.warn(e); showToast('⚠️ Ошибка при снятии лота'); }
+  }catch(e){ console.warn(e); showToast(' Ошибка при снятии лота'); }
 }
 async function buyListing(id){
   if(!sb) return;
@@ -248,21 +248,21 @@ async function buyListing(id){
     state.ownedCars.push(carId);
     getFuel(carId); getCondition(carId); getUpg(carId);
     const car=carsDB.find(c=>c.id===carId);
-    showToast('🚗 Куплено у игрока: '+(car?car.name:'машина'));
+    showToast(' Куплено у игрока: '+(car?car.name:'машина'));
     updateHeader(); saveState(); refreshMarket();
-  }catch(e){ console.warn(e); showToast('⚠️ Не удалось купить лот'); }
+  }catch(e){ console.warn(e); showToast(' Не удалось купить лот'); }
 }
 function sellToState(carId){
   if(!state.ownedCars.includes(carId)) return;
   if(state.ownedCars.length<=1){ showToast('Нельзя продать последнюю машину'); return; }
   const car=carsDB.find(c=>c.id===carId);
   const price = stateSellPrice(car);
-  if(!confirm('Продать "'+car.name+'" государству за '+fmt(price)+' 💰? Это заметно ниже рыночной цены — зато мгновенно.')) return;
+  if(!confirm('Продать "'+car.name+'" государству за '+fmt(price)+' ? Это заметно ниже рыночной цены — зато мгновенно.')) return;
   state.coins += price; state.stats.totalEarned += price;
   state.ownedCars = state.ownedCars.filter(id=>id!==carId);
   if(state.activeCarId===carId) state.activeCarId = state.ownedCars[0];
   delete state.upgrades[carId]; delete state.fuel[carId]; delete state.condition[carId];
-  showToast('🏛️ Продано государству за '+fmt(price)+' 💰');
+  showToast(' Продано государству за '+fmt(price)+' ');
   updateHeader(); saveState(); renderSellPicker();
 }
 async function claimSoldProceeds(){
@@ -280,7 +280,7 @@ async function claimSoldProceeds(){
       state.claimedSaleIds.push(row.id);
       credited++; total+=Number(row.price)||0;
     }
-    if(credited){ showToast('💰 Продано на рынке: +'+fmt(total)+' 💰 ('+credited+' лот.)'); updateHeader(); saveState(); }
+    if(credited){ showToast(' Продано на рынке: +'+fmt(total)+'  ('+credited+' лот.)'); updateHeader(); saveState(); }
   }catch(e){ console.warn(e); }
 }
 async function renderMyListings(){
@@ -289,11 +289,11 @@ async function renderMyListings(){
     const {data} = await sb.from('market_cars').select('*').eq('seller_id', state.playerId).order('id',{ascending:false}).limit(30);
     c.innerHTML='';
     if(!data || !data.length){ c.innerHTML='<div class="empty-note">Вы пока ничего не продавали на рынке</div>'; return; }
-    const labels = {active:'На продаже', sold:'Продано ✅', settled:'Продано ✅', cancelled:'Снято с продажи'};
+    const labels = {active:'На продаже', sold:'Продано ', settled:'Продано ', cancelled:'Снято с продажи'};
     data.forEach(r=>{
       const car=carsDB.find(x=>x.id===parseInt(r.car_id,10));
       c.innerHTML += '<div class="listing-card"><div class="listing-head"><span class="listing-name">'+(car?car.name:'Машина #'+r.car_id)+'</span><span class="listing-meta">'+(labels[r.status]||r.status)+'</span></div>'+
-        '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' 💰</span>'+
+        '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' </span>'+
         (r.status==='active' ? '<button class="sell-btn" onclick="cancelListing('+r.id+')">Снять</button>' : '')+
         '</div></div>';
     });
@@ -322,7 +322,7 @@ function appendChatMessage(m){
 }
 async function loadChatHistory(){
   const statusEl=document.getElementById('chat-status');
-  if(!sb){ if(statusEl){ statusEl.innerText='⚠️ Чат недоступен (нет подключения к серверу)'; statusEl.classList.remove('on'); } return; }
+  if(!sb){ if(statusEl){ statusEl.innerText=' Чат недоступен (нет подключения к серверу)'; statusEl.classList.remove('on'); } return; }
   if(statusEl) statusEl.innerText='Загрузка сообщений…';
   try{
     const {data,error} = await sb.from('chat_messages').select('*').order('id',{ascending:false}).limit(50);
@@ -332,7 +332,7 @@ async function loadChatHistory(){
     msgs.forEach(appendChatMessage);
     c.scrollTop=c.scrollHeight;
     if(statusEl){ statusEl.innerText='Онлайн'; statusEl.classList.add('on'); }
-  }catch(e){ console.warn(e); if(statusEl){ statusEl.innerText='⚠️ Ошибка загрузки чата'; statusEl.classList.remove('on'); } }
+  }catch(e){ console.warn(e); if(statusEl){ statusEl.innerText=' Ошибка загрузки чата'; statusEl.classList.remove('on'); } }
 }
 function subscribeChat(){
   if(!sb || chatChannel) return;
@@ -352,7 +352,7 @@ async function sendChatMessage(){
   try{
     const {error}=await sb.from('chat_messages').insert({user_name:safeText(state.playerName,'Гонщик',48),message:text});if(error)throw error;
     chatSendTimes.push(now);input.value='';haptic('light');
-  }catch(e){console.warn(e);showToast('⚠️ Сообщение не отправлено');}
+  }catch(e){console.warn(e);showToast(' Сообщение не отправлено');}
 }
 
 /* ==================== БАНК (ПЕРЕВОДЫ МЕЖДУ ИГРОКАМИ) ==================== */
@@ -387,12 +387,12 @@ async function sendBankTransfer(){
   if(!/^(tg_[0-9]{1,24}|guest_[A-Za-z0-9-]{8,80})$/.test(toId)){statusEl.innerText='Некорректный ID получателя';return;}
   if(toId===state.playerId){ statusEl.innerText='Нельзя перевести самому себе'; return; }
   if(!amount || amount<=0){ statusEl.innerText='Некорректная сумма'; return; }
-  if(amount>BANK_MAX_PER_TRANSFER){ statusEl.innerText='Максимум за один перевод: '+fmt(BANK_MAX_PER_TRANSFER)+' 💰'; return; }
+  if(amount>BANK_MAX_PER_TRANSFER){ statusEl.innerText='Максимум за один перевод: '+fmt(BANK_MAX_PER_TRANSFER)+' '; return; }
   if(amount>state.coins){ statusEl.innerText='Недостаточно денег'; return; }
   const cooldown=bankCooldownLeft(toId);
   if(cooldown>0){ statusEl.innerText='Этому игроку можно перевести снова через '+Math.ceil(cooldown/60000)+' мин.'; return; }
   const sentToday=bankSentToday();
-  if(sentToday+amount>BANK_MAX_PER_DAY){ statusEl.innerText='Дневной лимит переводов: '+fmt(BANK_MAX_PER_DAY)+' 💰 (уже отправлено '+fmt(sentToday)+')'; return; }
+  if(sentToday+amount>BANK_MAX_PER_DAY){ statusEl.innerText='Дневной лимит переводов: '+fmt(BANK_MAX_PER_DAY)+'  (уже отправлено '+fmt(sentToday)+')'; return; }
   try{
     const {error} = await sb.from('bank_transfers').insert({
       sender_id: state.playerId, sender_name: state.playerName, receiver_id: toId, amount: amount
@@ -400,12 +400,12 @@ async function sendBankTransfer(){
     if(error) throw error;
     state.coins -= amount;
     state.bankSentLog.push({to:toId, amount, ts:Date.now()});
-    showToast('💸 Отправлено '+fmt(amount)+' 💰 игроку '+toId);
+    showToast(' Отправлено '+fmt(amount)+'  игроку '+toId);
     statusEl.style.color='var(--green)'; statusEl.innerText='Перевод отправлен!';
     amountInput.value=''; idInput.value='';
     updateHeader(); saveState(); renderBankLog();
     document.getElementById('bank-balance').innerText=fmt(state.coins);
-  }catch(e){ console.warn(e); statusEl.innerText='⚠️ Ошибка перевода'; }
+  }catch(e){ console.warn(e); statusEl.innerText=' Ошибка перевода'; }
 }
 async function claimBankTransfers(){
   if(!sb || !onlineAuthReady) return;
@@ -423,7 +423,7 @@ async function claimBankTransfers(){
       state.claimedTransferIds.push(row.id);
       credited++; total+=amount;
     }
-    if(credited){ showToast('🏦 Пришёл перевод: +'+fmt(total)+' 💰 ('+credited+' шт.)'); updateHeader(); saveState(); }
+    if(credited){ showToast(' Пришёл перевод: +'+fmt(total)+'  ('+credited+' шт.)'); updateHeader(); saveState(); }
   }catch(e){ console.warn(e); }
 }
 async function renderBankLog(){
@@ -438,7 +438,7 @@ async function renderBankLog(){
       const outgoing = r.sender_id===state.playerId;
       c.innerHTML += '<div class="listing-card"><div class="listing-head">'+
         '<span class="listing-name">'+(outgoing?'Отправлено → '+escapeHtml(r.receiver_id):'Получено ← '+escapeHtml(r.sender_name||r.sender_id))+'</span>'+
-        '<span class="listing-price" style="color:'+(outgoing?'var(--accent)':'var(--green)')+'">'+(outgoing?'-':'+')+fmt(r.amount)+' 💰</span>'+
+        '<span class="listing-price" style="color:'+(outgoing?'var(--accent)':'var(--green)')+'">'+(outgoing?'-':'+')+fmt(r.amount)+' </span>'+
         '</div></div>';
     });
   }catch(e){ console.warn(e); }
@@ -452,7 +452,7 @@ function openPvp(){
 }
 async function refreshPvpList(){
   const c=document.getElementById('pvp-list'); if(!c) return;
-  if(!sb){ c.innerHTML='<div class="empty-note">⚠️ PvP недоступен (нет подключения)</div>'; return; }
+  if(!sb){ c.innerHTML='<div class="empty-note"> PvP недоступен (нет подключения)</div>'; return; }
   try{
     const {data,error} = await sb.from('pvp_challenges').select('*').eq('status','open').order('id',{ascending:false}).limit(40);
     if(error) throw error;
@@ -462,13 +462,13 @@ async function refreshPvpList(){
       const isMine = r.challenger_id===state.playerId;
       c.innerHTML += '<div class="listing-card"><div class="listing-head"><span class="listing-name">'+escapeHtml(r.challenger_name||'Игрок')+'</span>'+(isMine?'<span class="mine-tag">Твой вызов</span>':'')+'</div>'+
         '<div class="listing-meta">Мощность соперника: '+r.power+' л.с.</div>'+
-        '<div class="listing-head"><span class="listing-price">Ставка '+fmt(r.stake)+' 💰</span>'+
+        '<div class="listing-head"><span class="listing-price">Ставка '+fmt(r.stake)+' </span>'+
         (isMine
           ? '<button class="sell-btn" onclick="cancelPvpChallenge('+r.id+')">Отменить</button>'
           : '<button class="btn btn-buy" style="width:auto;padding:8px 14px;" onclick="acceptPvpChallenge('+r.id+')">ПРИНЯТЬ ВЫЗОВ</button>')+
         '</div></div>';
     });
-  }catch(e){ console.warn(e); c.innerHTML='<div class="empty-note">⚠️ Не удалось загрузить вызовы</div>'; }
+  }catch(e){ console.warn(e); c.innerHTML='<div class="empty-note"> Не удалось загрузить вызовы</div>'; }
 }
 async function postPvpChallenge(){
   if(!sb){ showToast('PvP недоступен'); return; }
@@ -486,10 +486,10 @@ async function postPvpChallenge(){
     });
     if(error) throw error;
     state.coins -= stake; state.stats.totalSpent += stake;
-    showToast('🏁 Вызов создан! Ставка '+fmt(stake)+' 💰 заморожена до результата');
+    showToast(' Вызов создан! Ставка '+fmt(stake)+'  заморожена до результата');
     updateHeader(); saveState(); refreshPvpList();
     stakeInput.value='';
-  }catch(e){ console.warn(e); showToast('⚠️ Не удалось создать вызов'); }
+  }catch(e){ console.warn(e); showToast(' Не удалось создать вызов'); }
 }
 async function cancelPvpChallenge(id){
   if(!sb) return;
@@ -503,7 +503,7 @@ async function cancelPvpChallenge(id){
     state.coins += data.stake;
     showToast('Вызов отменён, ставка возвращена');
     updateHeader(); saveState(); refreshPvpList();
-  }catch(e){ console.warn(e); showToast('⚠️ Ошибка отмены'); }
+  }catch(e){ console.warn(e); showToast(' Ошибка отмены'); }
 }
 async function acceptPvpChallenge(id){
   if(!sb) return;
@@ -520,7 +520,7 @@ async function acceptPvpChallenge(id){
     if(!upd || !upd.length){ showToast('Вызов уже приняли раньше вас'); refreshPvpList(); return; }
     // ставка принимающего замораживается прямо в заезде (raceCtx.fee = stake)
     prepareRace(upd[0], 'pvp');
-  }catch(e){ console.warn(e); showToast('⚠️ Не удалось принять вызов'); }
+  }catch(e){ console.warn(e); showToast(' Не удалось принять вызов'); }
 }
 async function resolvePvpChallenge(row, accepterWon, reward){
   if(!sb || !row) return;
@@ -546,9 +546,9 @@ async function claimPvpResults(){
       if(row.winner_id===state.playerId){
         const winnings = (Number(row.stake)||0)*2;
         state.coins += winnings; state.stats.totalEarned += winnings;
-        showToast('🏆 Твой вызов принял '+(row.accepter_name||'игрок')+' — и ты выиграл +'+fmt(winnings)+' 💰!');
+        showToast(' Твой вызов принял '+(row.accepter_name||'игрок')+' — и ты выиграл +'+fmt(winnings)+' !');
       } else {
-        showToast('💥 Твой вызов принял '+(row.accepter_name||'игрок')+' — и обыграл тебя. Ставка потеряна.');
+        showToast(' Твой вызов принял '+(row.accepter_name||'игрок')+' — и обыграл тебя. Ставка потеряна.');
       }
       msgCount++;
     }

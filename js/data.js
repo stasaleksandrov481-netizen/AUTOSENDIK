@@ -25,8 +25,8 @@ const carsDB = [
   { id:23, name:"Lamborghini Huracan", image:"assets/cars/23.webp", price:42000, power:930, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Итальянский бык на асфальте. Соседи снимают на телефон каждый выезд." },
   { id:24, name:"Lamborghini Aventador", image:"assets/cars/24.webp", price:52000, power:975, tier:"Legendary Boss", cat:"legend", flavor:"Ножничные двери — билет в клуб избранных подполья." },
   { id:25, name:"Bugatti Chiron", image:"assets/cars/25.webp", price:78000, power:1200, tier:"Legendary Boss", cat:"legend", flavor:"Не машина — произведение искусства с мотором W16. Топ пищевой цепи." },
-  { id:26, name:"Комета Тьмы (миф)", image:null, price:95000, power:1350, tier:"Mythic ★★★", cat:"myth", flavor:"Говорят, объезжает светофоры сама и появляется только на полнолуние. Никто не видел документов на эту тачку." },
-  { id:27, name:"'Дед Толян' — ржавое чудо", image:null, price:9999, power:1050, tier:"Mythic ★★★", cat:"myth", flavor:"Снаружи ведро с гайками, внутри — движок неизвестного происхождения. Механики отказываются его обслуживать из уважения." }
+  { id:26, name:"Комета Тьмы (миф)", image:null, price:95000, power:1350, tier:"Mythic ", cat:"myth", flavor:"Говорят, объезжает светофоры сама и появляется только на полнолуние. Никто не видел документов на эту тачку." },
+  { id:27, name:"'Дед Толян' — ржавое чудо", image:null, price:9999, power:1050, tier:"Mythic ", cat:"myth", flavor:"Снаружи ведро с гайками, внутри — движок неизвестного происхождения. Механики отказываются его обслуживать из уважения." }
 ];
 const CAT_LABELS = { street:"Уличный", jdm:"JDM тюнер", muscle:"Масл-кар", sport:"Спорт", super:"Суперкар", hyper:"Гиперкар", legend:"Легенда", myth:"Миф подполья" };
 const CAT_COLORS = { street:['#94a3b8','#334155'], jdm:['#38bdf8','#0c4a6e'], muscle:['#fb923c','#7c2d12'], sport:['#a78bfa','#4c1d95'], super:['#fb7185','#4c0519'], hyper:['#fbbf24','#78350f'], legend:['#facc15','#713f12'], myth:['#c084fc','#1e1033'] };
@@ -66,10 +66,10 @@ function carArtSVG(car){
 
 /* ==================== TUNING (5 stages + Nitro + Tires) ==================== */
 const TUNE_TYPES = [
-  { key:"engine", name:"Двигатель", icon:"🔧", desc:"Прошивка ЭБУ и доработка мотора", hpPerStage:[0.08,0.09,0.10,0.11,0.12] },
-  { key:"turbo", name:"Турбина", icon:"🌀", desc:"Больше буст — больше тяги", hpPerStage:[0.06,0.07,0.08,0.09,0.10] },
-  { key:"gearbox", name:"КПП", icon:"⚙️", desc:"Короткие передачи, быстрее разгон", hpPerStage:[0.05,0.06,0.06,0.07,0.08] },
-  { key:"tires", name:"Резина", icon:"🛞", desc:"Слики держат разгон без пробуксовки", hpPerStage:[0.03,0.04,0.05,0.05,0.06] }
+  { key:"engine", name:"Двигатель", icon:"", desc:"Прошивка ЭБУ и доработка мотора", hpPerStage:[0.08,0.09,0.10,0.11,0.12] },
+  { key:"turbo", name:"Турбина", icon:"", desc:"Больше буст — больше тяги", hpPerStage:[0.06,0.07,0.08,0.09,0.10] },
+  { key:"gearbox", name:"КПП", icon:"", desc:"Короткие передачи, быстрее разгон", hpPerStage:[0.05,0.06,0.06,0.07,0.08] },
+  { key:"tires", name:"Резина", icon:"", desc:"Слики держат разгон без пробуксовки", hpPerStage:[0.03,0.04,0.05,0.05,0.06] }
 ];
 function getUpg(carId){ if(!state.upgrades[carId]) state.upgrades[carId]={engine:0,turbo:0,gearbox:0,tires:0}; TUNE_TYPES.forEach(t=>{ if(state.upgrades[carId][t.key]===undefined) state.upgrades[carId][t.key]=0; }); return state.upgrades[carId]; }
 function getEffectivePower(car){

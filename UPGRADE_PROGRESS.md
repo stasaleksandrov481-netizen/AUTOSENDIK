@@ -1,14 +1,19 @@
-# Carbon Expansion Progress
+# Carbon Expansion v8 — status
 
-Implemented:
-- vehicle instances foundation
-- plate system foundation
-- case drop database foundation
-- stronger acceleration and turbo scaling
-- speed effect state foundation
+Завершено в этой сборке:
 
-Next:
-- market migration
-- UI redesign
-- rival profiles
-- case animation
+- динамика гонки, новые пределы скорости и усиленный AI;
+- launch-control, GOOD/PERFECT SHIFT и влияние уровня КПП;
+- расширенный пул и профили соперников, реплики до/после гонки;
+- новая case roulette, chances/history/pity и редкие автомобили;
+- коллекция и установка номеров, редкости и LIMITED серии;
+- full-vehicle market snapshot с тюнингом и номером;
+- новое меню тюнинга, сравнения, графики, build score и история;
+- серверная referral-связь, 5% ledger, стартовый и first-race бонус;
+- SVG-иконки вместо emoji в интерфейсных исходниках;
+- динамический preloader;
+- save v8 с резервными копиями;
+- market reconciliation и дополнительные guard-проверки Supabase;
+- статические и VM smoke-проверки проекта.
+
+Ограничение: полностью сервер-авторитетная экономика не внедрялась, потому что существующая игра изначально хранит основной кошелёк и инвентарь в `localStorage`. Подробности — `SECURITY.md`.

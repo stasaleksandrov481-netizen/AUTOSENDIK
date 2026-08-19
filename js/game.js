@@ -10,7 +10,7 @@ function refuelCar(carId){
   const cost = need*fuelPricePerUnit(car);
   if(state.coins<cost){ showToast("Недостаточно денег на заправку"); return; }
   state.coins-=cost; state.stats.totalSpent+=cost; state.fuel[carId]=100;
-  showToast("⛽ Заправлено за "+fmt(cost)+" 💰");
+  showToast(" Заправлено за "+fmt(cost)+" ");
   saveState(); openDetail(carId);
 }
 function repairCar(carId){
@@ -20,7 +20,7 @@ function repairCar(carId){
   const cost = need*repairPricePerUnit(car);
   if(state.coins<cost){ showToast("Недостаточно денег на ремонт"); return; }
   state.coins-=cost; state.stats.totalSpent+=cost; state.condition[carId]=100;
-  showToast("🛠️ Отремонтировано за "+fmt(cost)+" 💰");
+  showToast(" Отремонтировано за "+fmt(cost)+" ");
   saveState(); openDetail(carId);
 }
 
@@ -56,7 +56,7 @@ function tapLogo(){
   const now=Date.now();
   if(now-(state.secretBonusAt||0)<24*60*60*1000){ showToast('Синдикат уже выдал скрытый бонус сегодня.'); saveState(); return; }
   state.secretBonusAt=now; state.coins+=250; state.stats.totalEarned+=250; state.nitro+=1;
-  showToast('🎁 Тайник синдиката: +250 SYND и 1 нитро');
+  showToast(' Тайник синдиката: +250 SYND и 1 нитро');
   haptic('success'); updateHeader(); saveState(); checkAchievements();
 }
 
@@ -125,7 +125,7 @@ function renderGarage(){
     const isActive=state.activeCarId===car.id,eff=getEffectivePower(car),fuel=getFuel(car.id),cond=getCondition(car.id);
     container.innerHTML+='<div class="car-card" style="'+(isActive?'border-color:var(--accent);':'')+'">'+
       '<div class="car-thumb" onclick="openDetail('+car.id+')">'+carArtSVG(car)+'<div class="tier-badge">'+car.tier+'</div><div class="power-badge">'+eff+' л.с.</div></div>'+
-      '<div class="car-info-box"><div class="car-title">'+car.name+'</div><div class="car-stats"><div>Статус: <span style="color:'+(isActive?'var(--accent-2)':'var(--green)')+'">'+(isActive?'АКТИВНА':'В ГАРАЖЕ')+'</span></div><div>⛽ <span style="color:'+(fuel<25?'var(--danger)':'#fff')+'">'+fuel+'%</span></div><div>🔧 <span style="color:'+(cond<40?'var(--danger)':'#fff')+'">'+cond+'%</span></div></div>'+
+      '<div class="car-info-box"><div class="car-title">'+car.name+'</div><div class="car-stats"><div>Статус: <span style="color:'+(isActive?'var(--accent-2)':'var(--green)')+'">'+(isActive?'АКТИВНА':'В ГАРАЖЕ')+'</span></div><div> <span style="color:'+(fuel<25?'var(--danger)':'#fff')+'">'+fuel+'%</span></div><div> <span style="color:'+(cond<40?'var(--danger)':'#fff')+'">'+cond+'%</span></div></div>'+
       '<div class="btn-row">'+(!isActive?'<button class="btn btn-select" onclick="selectCar('+car.id+')">ВЫБРАТЬ</button>':'<button class="btn btn-select selected-mark" disabled>АКТИВНА</button>')+'<button class="btn btn-ghost" onclick="openDetail('+car.id+')">КАРТОЧКА</button></div></div></div>';
   });
 }
@@ -146,10 +146,10 @@ function buyCar(carId){
   const car=carsDB.find(c=>c.id===carId); if(!car||state.ownedCars.includes(carId))return;
   if(state.coins<car.price){showToast('Недостаточно SYND');haptic('error');return;}
   state.coins-=car.price;state.stats.totalSpent+=car.price;state.ownedCars.push(carId);getFuel(carId);getCondition(carId);getUpg(carId);
-  showToast('🚗 В гараже: '+car.name);haptic('success');recordContractEvent('buy',1);updateHeader();renderShop();saveState();checkAchievements();
+  showToast(' В гараже: '+car.name);haptic('success');recordContractEvent('buy',1);updateHeader();renderShop();saveState();checkAchievements();
 }
 function selectCar(carId){
-  if(!state.ownedCars.includes(carId))return; state.activeCarId=carId;showToast('✅ Активная машина изменена');haptic('light');renderGarage();saveState();
+  if(!state.ownedCars.includes(carId))return; state.activeCarId=carId;showToast(' Активная машина изменена');haptic('light');renderGarage();saveState();
 }
 
 /* ==================== CAR DETAIL ==================== */
@@ -164,12 +164,12 @@ function openDetail(carId){
     '<div class="flavor-box">"'+car.flavor+'"</div>'+
     '<div class="stat-row"><div class="stat-line"><span>Мощность</span><b>'+eff+' л.с.'+(eff!==car.power?' (баз. '+car.power+')':'')+'</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+powerPct+'%;background:var(--accent);"></div></div>'+
     '<div class="stat-line" style="margin-top:8px;"><span>Класс</span><b>'+CAT_LABELS[car.cat]+'</b></div>'+
-    '<div class="stat-line"><span>Цена</span><b>'+(car.price===0?'Стартовая':fmt(car.price)+' 💰')+'</b></div></div>';
+    '<div class="stat-line"><span>Цена</span><b>'+(car.price===0?'Стартовая':fmt(car.price)+' ')+'</b></div></div>';
 
   if(isOwned){
     html += '<div class="resource-row">'+
-      '<div class="resource-box"><div class="resource-head"><span>⛽ Топливо</span><b>'+fuel+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+fuel+'%;background:var(--blue);"></div></div></div>'+
-      '<div class="resource-box"><div class="resource-head"><span>🔧 Состояние</span><b>'+cond+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+cond+'%;background:'+(cond<40?'var(--accent)':'var(--green)')+';"></div></div></div>'+
+      '<div class="resource-box"><div class="resource-head"><span> Топливо</span><b>'+fuel+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+fuel+'%;background:var(--blue);"></div></div></div>'+
+      '<div class="resource-box"><div class="resource-head"><span> Состояние</span><b>'+cond+'%</b></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:'+cond+'%;background:'+(cond<40?'var(--accent)':'var(--green)')+';"></div></div></div>'+
     '</div>'+
     '<div class="btn-row" style="max-width:520px;width:100%;margin-bottom:10px;">'+
       '<button class="btn btn-ghost" onclick="refuelCar('+carId+')">ЗАПРАВИТЬ</button>'+
@@ -177,11 +177,11 @@ function openDetail(carId){
     '</div>'+
     '<div class="list-container" style="max-width:520px;">'+
       (state.activeCarId!==carId ? '<button class="btn btn-select" onclick="selectCar('+carId+')">СДЕЛАТЬ АКТИВНОЙ</button>' : '<button class="btn btn-select selected-mark" disabled>АКТИВНАЯ МАШИНА</button>')+
-      '<button class="btn btn-gold" onclick="openTune('+carId+')">🔧 ТЮНИНГ</button>'+
+      '<button class="btn btn-gold" onclick="openTune('+carId+')"> ТЮНИНГ</button>'+
     '</div>';
   } else {
     const canAfford = state.coins>=car.price;
-    html += '<div class="list-container" style="max-width:520px;"><button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+carId+');openDetail('+carId+')">'+(canAfford?'КУПИТЬ ЗА '+fmt(car.price)+' 💰':'НЕДОСТАТОЧНО СРЕДСТВ')+'</button></div>';
+    html += '<div class="list-container" style="max-width:520px;"><button class="btn btn-buy" '+(canAfford?'':'disabled')+' onclick="buyCar('+carId+');openDetail('+carId+')">'+(canAfford?'КУПИТЬ ЗА '+fmt(car.price)+' ':'НЕДОСТАТОЧНО СРЕДСТВ')+'</button></div>';
   }
   document.getElementById('detail-content').innerHTML = html;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -210,7 +210,7 @@ function openTune(carId){
     container.innerHTML += '<div class="tune-row">'+
       '<div><div class="tune-name">'+t.icon+' '+t.name+' <span style="color:var(--text-muted);font-weight:700;font-size:10.5px;">Ст.'+lvl+'/'+t.hpPerStage.length+'</span></div>'+
       '<div class="tune-desc">'+t.desc+'</div><div class="tune-level-dots">'+dots+'</div></div>'+
-      '<button class="tune-btn '+(maxed?'maxed':'')+'" '+(maxed||!canAfford?'disabled':'')+' onclick="upgradeTune('+carId+',\''+t.key+'\')">'+(maxed?'МАКС':fmt(price)+' 💰')+'</button>'+
+      '<button class="tune-btn '+(maxed?'maxed':'')+'" '+(maxed||!canAfford?'disabled':'')+' onclick="upgradeTune('+carId+',\''+t.key+'\')">'+(maxed?'МАКС':fmt(price)+' ')+'</button>'+
     '</div>';
   });
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -226,7 +226,7 @@ function upgradeTune(carId, key){
   if(state.coins<price){ showToast("Недостаточно денег"); return; }
   state.coins-=price; state.stats.totalSpent+=price;
   upg[key]++;
-  showToast("🔧 "+t.name+" улучшена до стадии "+upg[key]);
+  showToast(" "+t.name+" улучшена до стадии "+upg[key]);
   updateHeader(); openTune(carId); saveState();
   checkAchievements();
 }
@@ -239,7 +239,7 @@ function renderOpponents(){
   const car=carsDB.find(c=>c.id===state.activeCarId);
   if(!car){ container.innerHTML='<div class="no-car-msg">Сначала выберите активную машину в гараже.</div>'; return; }
   if(state.licenseSuspended){
-    container.innerHTML='<div class="sell-picker" style="border-color:#63333e;"><div style="font-size:18px;">🚫</div><b style="display:block;margin:6px 0;">Права временно изъяты</b><div class="empty-note" style="padding:0;text-align:left;">Но это не тупик. Можно заработать через подработку или получить перевод в банке.</div><div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" onclick="switchTab(\'jobs\')">ПОДРАБОТКА</button><button class="btn btn-ghost" onclick="switchTab(\'bank\')">БАНК</button></div></div>';
+    container.innerHTML='<div class="sell-picker" style="border-color:#63333e;"><div style="font-size:18px;"></div><b style="display:block;margin:6px 0;">Права временно изъяты</b><div class="empty-note" style="padding:0;text-align:left;">Но это не тупик. Можно заработать через подработку или получить перевод в банке.</div><div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" onclick="switchTab(\'jobs\')">ПОДРАБОТКА</button><button class="btn btn-ghost" onclick="switchTab(\'bank\')">БАНК</button></div></div>';
     return;
   }
   const list=state.duelSub==='tour'?tournamentsDB:opponentsDB;
@@ -257,7 +257,7 @@ function renderOpponents(){
     const locked=available.filter(o=>statusText(o).count>=3 || statusText(o).next>now);
     if(available.length && locked.length===available.length){
       const soon=Math.min(...locked.map(o=>Math.max(0,(statusText(o).next-now)/60000)).filter(x=>x>0));
-      container.innerHTML='<div class="empty-note">🏁 Все турнирные попытки на сегодня использованы.<br><span style="font-size:10px;">Новые попытки появятся завтра'+(Number.isFinite(soon)?' или после восстановления кулдауна.':'')+'</span></div>';
+      container.innerHTML='<div class="empty-note"> Все турнирные попытки на сегодня использованы.<br><span style="font-size:10px;">Новые попытки появятся завтра'+(Number.isFinite(soon)?' или после восстановления кулдауна.':'')+'</span></div>';
       return;
     }
   }
@@ -289,7 +289,7 @@ function renderOpponents(){
     const buttonDisabled=state.duelSub==='tour' && tourCount>=3;
     container.innerHTML += '<div class="opp-card '+(opp.boss?'boss ':'')+'roulette-choice" style="animation-delay:'+idx*70+'ms">'+
       '<div class="opp-scan"></div>'+
-      '<div class="opp-head"><span class="opp-name">'+(opp.boss?'👑 ':'')+escapeHtml(opp.name)+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
+      '<div class="opp-head"><span class="opp-name">'+(opp.boss?' ':'')+escapeHtml(opp.name)+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
       (opp.boss?'<div class="boss-badge" style="position:static;display:inline-block;width:fit-content;">БОСС</div>':'')+
       '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;">'+escapeHtml(opp.taunt)+'</div>'+
       '<div class="odds-bar-bg"><div class="odds-win" style="width:'+winChance+'%"></div><div class="odds-lose" style="width:'+(100-winChance)+'%"></div></div>'+
@@ -312,7 +312,7 @@ function renderJobs(){
     const remaining = Math.max(0, Math.ceil((readyAt-now)/1000));
     const ready = remaining<=0;
     container.innerHTML += '<div class="job-card">'+
-        '<div class="job-head"><span class="job-name">'+job.name+'</span><span class="job-reward">+'+fmt(job.reward)+' 💰</span></div>'+
+        '<div class="job-head"><span class="job-name">'+job.name+'</span><span class="job-reward">+'+fmt(job.reward)+' </span></div>'+
         '<div class="job-desc">'+job.desc+'</div>'+
         '<button class="job-btn" id="job-btn-'+job.id+'" onclick="doJob(\''+job.id+'\')" '+(ready?'':'disabled')+'>'+(ready ? 'ВЫПОЛНИТЬ' : 'Отдых: '+remaining+'с')+'</button>'+
       '</div>';
@@ -323,7 +323,7 @@ function doJob(jobId){
   const readyAt=state.jobCooldowns[jobId]||0;if(now<readyAt)return;
   awardMoney(job.reward,job.name);addXP(job.xp||5);state.jobCooldowns[jobId]=now+job.cooldown*1000;
   if(jobId==='wash') reduceHeat(1); recordContractEvent('job',1); haptic('success');
-  showToast('💼 '+job.name+': +'+fmt(job.reward)+' SYND');updateHeader();renderJobs();saveState();
+  showToast(' '+job.name+': +'+fmt(job.reward)+' SYND');updateHeader();renderJobs();saveState();
 }
 setInterval(()=>{
   if(document.getElementById('screen-jobs').classList.contains('active')) renderJobs();
@@ -338,7 +338,7 @@ function renderCasinoHub(){
     '<div class="casino-card" onclick="switchTab(\'roulette\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></div><div class="casino-info"><b>Рулетка</b><span>Красное, чёрное или число</span></div></div>'+
     '<div class="casino-card" onclick="switchTab(\'slots\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5M16 4v5"/></svg></div><div class="casino-info"><b>Слоты «777»</b><span>Крути барабаны на джекпот</span></div></div>'+
     '<div class="casino-card" onclick="switchTab(\'dice\')"><div class="casino-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></div><div class="casino-info"><b>Кости</b><span>Загадай шанс — забери выплату</span></div></div>'+
-    '<div style="width:100%;max-width:520px;text-align:center;color:var(--text-muted);font-size:11px;font-weight:700;margin-top:6px;">Всего поставлено: '+fmt(state.stats.casinoWagered)+' 💰 · Выиграно: '+fmt(state.stats.casinoWon)+' 💰</div>';
+    '<div style="width:100%;max-width:520px;text-align:center;color:var(--text-muted);font-size:11px;font-weight:700;margin-top:6px;">Всего поставлено: '+fmt(state.stats.casinoWagered)+'  · Выиграно: '+fmt(state.stats.casinoWon)+' </div>';
 }
 function clampBet(input, min){
   let v = parseInt(input.value)||0;
@@ -354,7 +354,7 @@ let rltSpinning=false,slotsSpinning=false,diceRolling=false;
 function bjAdjustBet(delta){ const i=document.getElementById('bj-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
 function bjMaxBet(){ document.getElementById('bj-bet-input').value=state.coins; clampBet(document.getElementById('bj-bet-input'),10); }
 function bjNewDeck(){
-  const suits=['♠','♥','♦','♣']; const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const suits=['S','H','D','C']; const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
   let d=[];
   suits.forEach(s=>ranks.forEach(r=>d.push({r,s})));
   for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
@@ -372,7 +372,7 @@ function bjCardValue(hand){
 }
 function bjRenderCard(c, hidden){
   if(hidden) return '<div class="card-el back"></div>';
-  const red = c.s==='♥'||c.s==='♦';
+  const red = c.s==='H'||c.s==='D';
   return '<div class="card-el '+(red?'red':'black')+'">'+c.r+'<br>'+c.s+'</div>';
 }
 function bjRenderHands(hideDealer){
@@ -430,15 +430,15 @@ function bjEnd(result){
   const isBlackjack = bj.player.length===2 && bjCardValue(bj.player)===21;
   let payout=0, text='';
   if(result==='win' || result==='bust'){
-    if(result==='bust'){ text='💥 ПЕРЕБОР — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
+    if(result==='bust'){ text=' ПЕРЕБОР — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
     else {
       state.stats.blackjackWins=(state.stats.blackjackWins||0)+1;
       payout = isBlackjack ? Math.round(bj.bet*2.5) : bj.bet*2;
-      text = isBlackjack ? '🃏 БЛЭКДЖЕК! +'+fmt(payout-bj.bet)+' 💰' : '🏆 ПОБЕДА! +'+fmt(payout-bj.bet)+' 💰';
+      text = isBlackjack ? ' БЛЭКДЖЕК! +'+fmt(payout-bj.bet)+' ' : ' ПОБЕДА! +'+fmt(payout-bj.bet)+' ';
       msg.style.color='var(--green)';
     }
-  } else if(result==='push'){ payout=bj.bet; text='🤝 НИЧЬЯ — ставка возвращена'; msg.style.color='var(--text-muted)'; }
-  else { text='💥 ДИЛЕР СИЛЬНЕЕ — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
+  } else if(result==='push'){ payout=bj.bet; text=' НИЧЬЯ — ставка возвращена'; msg.style.color='var(--text-muted)'; }
+  else { text=' ДИЛЕР СИЛЬНЕЕ — вы проиграли'; msg.style.color='var(--accent)'; payout=0; }
   msg.innerText=text;
   if(payout>0){ state.coins+=payout; state.stats.casinoWon+=Math.max(0,payout-bj.bet); }
   updateHeader();
@@ -500,10 +500,10 @@ function rltSpin(){
     if(win){
       const payout = bet + bet*mult;
       state.coins+=payout; state.stats.casinoWon += payout-bet;
-      showToast("🎉 Выигрыш! +"+fmt(payout-bet)+" 💰");
+      showToast(" Выигрыш! +"+fmt(payout-bet)+" ");
       flashResult(table, true);
     } else {
-      showToast("😔 Не повезло. Число: "+n);
+      showToast(" Не повезло. Число: "+n);
       flashResult(table, false);
     }
     rltSpinning=false;updateHeader(); saveState(); checkAchievements();
@@ -511,7 +511,7 @@ function rltSpin(){
 }
 
 /* ==================== SLOTS ==================== */
-const SLOT_SYMBOLS = ['🍒','🍋','🔔','⭐','💎','7️⃣'];
+const SLOT_SYMBOLS = ['','','','⭐','','7⃣'];
 const SLOT_WEIGHTS = [30,26,20,13,8,3];
 function slotsAdjustBet(delta){ const i=document.getElementById('slots-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
 function slotsMaxBet(){ document.getElementById('slots-bet-input').value=state.coins; clampBet(document.getElementById('slots-bet-input'),10); }
@@ -521,7 +521,7 @@ function weightedSymbol(){
   for(let i=0;i<SLOT_SYMBOLS.length;i++){ if(r<SLOT_WEIGHTS[i]) return SLOT_SYMBOLS[i]; r-=SLOT_WEIGHTS[i]; }
   return SLOT_SYMBOLS[0];
 }
-const SLOT_PAYOUTS = {'🍒':3,'🍋':4,'🔔':6,'⭐':10,'💎':20,'7️⃣':50};
+const SLOT_PAYOUTS = {'':3,'':4,'':6,'⭐':10,'':20,'7⃣':50};
 function slotsSpin(){
   if(slotsSpinning)return;
   const bet = clampBet(document.getElementById('slots-bet-input'),10);
@@ -541,10 +541,10 @@ function slotsSpin(){
       let payout=0, msg='';
       if(final[0]===final[1] && final[1]===final[2]){
         payout = bet*SLOT_PAYOUTS[final[0]];
-        msg = '🎰 ДЖЕКПОТ! '+final[0]+final[0]+final[0]+' — x'+SLOT_PAYOUTS[final[0]];
+        msg = ' ДЖЕКПОТ! '+final[0]+final[0]+final[0]+' — x'+SLOT_PAYOUTS[final[0]];
       } else if(final[0]===final[1] || final[1]===final[2] || final[0]===final[2]){
         payout = Math.round(bet*1.5);
-        msg = '✨ Пара совпала — небольшой выигрыш';
+        msg = ' Пара совпала — небольшой выигрыш';
       } else { msg='Не повезло, крутите ещё'; }
       const table=document.querySelector('#screen-slots');
       if(payout>0){ state.coins+=payout; state.stats.casinoWon+=payout-bet; flashResult(table,true); }
@@ -585,11 +585,11 @@ function diceRoll(){
       const payout = Math.round(bet*mult);
       state.coins+=payout; state.stats.casinoWon+=payout-bet;
       resEl.style.color='var(--green)';
-      showToast("🎲 Выигрыш! +"+fmt(payout-bet)+" 💰");
+      showToast(" Выигрыш! +"+fmt(payout-bet)+" ");
       flashResult(table,true);
     } else {
       resEl.style.color='var(--accent)';
-      showToast("🎲 Мимо. Выпало: "+roll);
+      showToast(" Мимо. Выпало: "+roll);
       flashResult(table,false);
     }
     diceRolling=false;updateHeader(); saveState(); checkAchievements();
@@ -598,18 +598,18 @@ function diceRoll(){
 
 /* ==================== ACHIEVEMENTS ==================== */
 const achievementsDB = [
-  { id:'first_win', name:'Первая кровь', desc:'Выиграй свою первую дуэль', icon:'🏆', reward:100, check:s=>s.stats.wins>=1 },
-  { id:'ten_wins', name:'Ветеран трассы', desc:'Одержи 10 побед', icon:'🥇', reward:500, check:s=>s.stats.wins>=10 },
-  { id:'five_cars', name:'Коллекционер', desc:'Владей 5 машинами одновременно', icon:'🚘', reward:400, check:s=>s.ownedCars.length>=5 },
-  { id:'all_cars', name:'Весь гараж синдиката', desc:'Собери все машины в игре', icon:'🏁', reward:5000, check:s=>s.ownedCars.length>=27 },
+  { id:'first_win', name:'Первая кровь', desc:'Выиграй свою первую дуэль', icon:'', reward:100, check:s=>s.stats.wins>=1 },
+  { id:'ten_wins', name:'Ветеран трассы', desc:'Одержи 10 побед', icon:'', reward:500, check:s=>s.stats.wins>=10 },
+  { id:'five_cars', name:'Коллекционер', desc:'Владей 5 машинами одновременно', icon:'', reward:400, check:s=>s.ownedCars.length>=5 },
+  { id:'all_cars', name:'Весь гараж синдиката', desc:'Собери все машины в игре', icon:'', reward:5000, check:s=>s.ownedCars.length>=27 },
   { id:'lvl10', name:'Авторитет района', desc:'Достигни 10 уровня', icon:'⭐', reward:600, check:s=>s.level>=10 },
-  { id:'first_fine', name:'Знакомство с ДПС', desc:'Получи первый штраф от полиции', icon:'🚓', reward:50, check:s=>s.stats.finesCount>=1 },
-  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'🃏', reward:150, check:s=>(s.stats.blackjackWins||0)>=1 },
-  { id:'max_tune', name:'Гараж мечты', desc:'Прокачай тюнинг любой машины до максимума во всех категориях', icon:'🔧', reward:800, check:s=>Object.values(s.upgrades).some(u=>u && TUNE_TYPES.every(t=>u[t.key]>=t.hpPerStage.length)) },
-  { id:'earn50k', name:'Барон подполья', desc:'Заработай суммарно 50 000 💰', icon:'💰', reward:1000, check:s=>s.stats.totalEarned>=50000 },
-  { id:'daily7', name:'Верный синдикату', desc:'Забирай ежедневную награду 7 дней подряд', icon:'📅', reward:700, check:s=>s.dailyStreak>=7 },
-  { id:'secret_car', name:'Тень подполья', desc:'Стань владельцем мифической машины', icon:'👻', reward:1500, check:s=>s.ownedCars.includes(26)||s.ownedCars.includes(27) },
-  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'👑', reward:2000, check:s=>(s.stats.bossWins||0)>=1 }
+  { id:'first_fine', name:'Знакомство с ДПС', desc:'Получи первый штраф от полиции', icon:'', reward:50, check:s=>s.stats.finesCount>=1 },
+  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'', reward:150, check:s=>(s.stats.blackjackWins||0)>=1 },
+  { id:'max_tune', name:'Гараж мечты', desc:'Прокачай тюнинг любой машины до максимума во всех категориях', icon:'', reward:800, check:s=>Object.values(s.upgrades).some(u=>u && TUNE_TYPES.every(t=>u[t.key]>=t.hpPerStage.length)) },
+  { id:'earn50k', name:'Барон подполья', desc:'Заработай суммарно 50 000 ', icon:'', reward:1000, check:s=>s.stats.totalEarned>=50000 },
+  { id:'daily7', name:'Верный синдикату', desc:'Забирай ежедневную награду 7 дней подряд', icon:'', reward:700, check:s=>s.dailyStreak>=7 },
+  { id:'secret_car', name:'Тень подполья', desc:'Стань владельцем мифической машины', icon:'', reward:1500, check:s=>s.ownedCars.includes(26)||s.ownedCars.includes(27) },
+  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'', reward:2000, check:s=>(s.stats.bossWins||0)>=1 }
 ];
 function checkAchievements(){
   let any=false;
@@ -620,7 +620,7 @@ function checkAchievements(){
     if(passed){
       state.achievements[a.id]=true;
       state.coins += a.reward;
-      showToast('🏅 Достижение: '+a.name+' (+'+fmt(a.reward)+' 💰)');
+      showToast(' Достижение: '+a.name+' (+'+fmt(a.reward)+' )');
       any=true;
     }
   });
@@ -636,23 +636,23 @@ function renderAchievements(){
     c.innerHTML += '<div class="ach-card '+(done?'done':'')+'">'+
       '<div class="ach-ic">'+a.icon+'</div>'+
       '<div class="ach-body"><b>'+a.name+'</b><span>'+a.desc+'</span></div>'+
-      '<div class="ach-reward">'+(done?'✅':'+'+fmt(a.reward))+'</div>'+
+      '<div class="ach-reward">'+(done?'':'+'+fmt(a.reward))+'</div>'+
     '</div>';
   });
 }
 
 /* ==================== CASES ==================== */
 const casesDB = [
-  { id:'bronze', name:'Бронзовый кейс', icon:'🥉', price:300, desc:'Немного монет или заряд нитро' },
-  { id:'silver', name:'Серебряный кейс', icon:'🥈', price:1200, desc:'Хорошая пачка денег и шанс на нитро' },
-  { id:'gold', name:'Золотой кейс', icon:'🥇', price:4000, desc:'Крупный куш и редкий шанс на мифическую машину' }
+  { id:'bronze', name:'Бронзовый кейс', icon:'', price:300, desc:'Немного монет или заряд нитро' },
+  { id:'silver', name:'Серебряный кейс', icon:'', price:1200, desc:'Хорошая пачка денег и шанс на нитро' },
+  { id:'gold', name:'Золотой кейс', icon:'', price:4000, desc:'Крупный куш и редкий шанс на мифическую машину' }
 ];
 function renderCases(){
   const c=document.getElementById('cases-list');
   c.innerHTML='';
   casesDB.forEach(cs=>{
     c.innerHTML += '<div class="case-card"><div class="case-ic">'+cs.icon+'</div><div class="case-name">'+cs.name+'</div><div class="case-desc">'+cs.desc+'</div>'+
-      '<button class="btn btn-gold" '+(state.coins<cs.price?'disabled':'')+' onclick="openCase(\''+cs.id+'\')">ОТКРЫТЬ ЗА '+fmt(cs.price)+' 💰</button></div>';
+      '<button class="btn btn-gold" '+(state.coins<cs.price?'disabled':'')+' onclick="openCase(\''+cs.id+'\')">ОТКРЫТЬ ЗА '+fmt(cs.price)+' </button></div>';
   });
 }
 function openCase(caseId){
@@ -662,27 +662,27 @@ function openCase(caseId){
   const r = Math.random();
   let resultMsg='';
   if(caseId==='bronze'){
-    if(r<0.6){ const c=Math.round(cs.price*(0.5+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
-    else if(r<0.9){ state.nitro+=1; resultMsg='+1 заряд нитро ⚡'; }
-    else { const c=Math.round(cs.price*2.5); state.coins+=c; resultMsg='Удача! +'+fmt(c)+' 💰'; }
+    if(r<0.6){ const c=Math.round(cs.price*(0.5+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' '; }
+    else if(r<0.9){ state.nitro+=1; resultMsg='+1 заряд нитро '; }
+    else { const c=Math.round(cs.price*2.5); state.coins+=c; resultMsg='Удача! +'+fmt(c)+' '; }
   } else if(caseId==='silver'){
-    if(r<0.5){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
-    else if(r<0.85){ state.nitro+=2; resultMsg='+2 заряда нитро ⚡'; }
-    else { const c=Math.round(cs.price*3); state.coins+=c; resultMsg='Крупная удача! +'+fmt(c)+' 💰'; }
+    if(r<0.5){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' '; }
+    else if(r<0.85){ state.nitro+=2; resultMsg='+2 заряда нитро '; }
+    else { const c=Math.round(cs.price*3); state.coins+=c; resultMsg='Крупная удача! +'+fmt(c)+' '; }
   } else {
-    if(r<0.45){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
-    else if(r<0.8){ state.nitro+=3; resultMsg='+3 заряда нитро ⚡'; }
-    else if(r<0.985){ const c=Math.round(cs.price*3.5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+    if(r<0.45){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' '; }
+    else if(r<0.8){ state.nitro+=3; resultMsg='+3 заряда нитро '; }
+    else if(r<0.985){ const c=Math.round(cs.price*3.5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' '; }
     else {
       const secretIds=[26,27].filter(id=>!state.ownedCars.includes(id));
       if(secretIds.length>0){
         const id=secretIds[Math.floor(Math.random()*secretIds.length)];
         state.ownedCars.push(id);
-        resultMsg='🌟 ЛЕГЕНДАРНЫЙ ДРОП! Машина "'+carsDB.find(c=>c.id===id).name+'" теперь ваша!';
-      } else { const c=Math.round(cs.price*5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+        resultMsg=' ЛЕГЕНДАРНЫЙ ДРОП! Машина "'+carsDB.find(c=>c.id===id).name+'" теперь ваша!';
+      } else { const c=Math.round(cs.price*5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' '; }
     }
   }
-  showToast('🎁 '+resultMsg);
+  showToast(' '+resultMsg);
   updateHeader(); renderCases(); saveState(); checkAchievements();
 }
 
@@ -742,7 +742,7 @@ function haptic(type='light'){
 function renderGarageTools(){
   const active=carsDB.find(c=>c.id===state.activeCarId),q=document.getElementById('garage-quick-service'),tb=document.getElementById('garage-toolbar');if(!active||!q||!tb)return;
   const fuel=getFuel(active.id),cond=getCondition(active.id);
-  q.innerHTML='<div class="quick-service-card" onclick="quickRefuelActive()"><span>Быстрый сервис · топливо</span><b>⛽ '+fuel+'% · до полного</b></div><div class="quick-service-card" onclick="quickRepairActive()"><span>Быстрый сервис · состояние</span><b>🔧 '+cond+'% · ремонт</b></div>';
+  q.innerHTML='<div class="quick-service-card" onclick="quickRefuelActive()"><span>Быстрый сервис · топливо</span><b> '+fuel+'% · до полного</b></div><div class="quick-service-card" onclick="quickRepairActive()"><span>Быстрый сервис · состояние</span><b> '+cond+'% · ремонт</b></div>';
   tb.innerHTML=['name','power','condition'].map(k=>'<button class="carbon-chip '+(garageSort===k?'active':'')+'" onclick="setGarageSort(\''+k+'\')">'+({name:'ПО НАЗВАНИЮ',power:'МОЩНОСТЬ',condition:'СОСТОЯНИЕ'}[k])+'</button>').join('');
 }
 function setGarageSort(v){garageSort=['name','power','condition'].includes(v)?v:'name';renderGarage();}
@@ -802,11 +802,11 @@ function openDailyModal(force){
   }
   const root=document.getElementById('daily-modal-root');
   root.innerHTML = '<div class="modal-overlay" id="daily-overlay"><div class="modal-box">'+
-    '<div style="font-size:40px;">📅</div>'+
+    '<div style="font-size:40px;"></div>'+
     '<div style="font-size:17px;font-weight:900;margin:8px 0;">Ежедневная награда</div>'+
     '<div style="color:var(--text-muted);font-size:12px;font-weight:700;">День '+(dayIndex+1)+' из 7</div>'+
     '<div class="daily-strip">'+strip+'</div>'+
-    (eligible ? '<button class="btn btn-gold" onclick="claimDaily('+dayIndex+')">ЗАБРАТЬ +'+fmt(DAILY_REWARDS[dayIndex])+' 💰</button>'
+    (eligible ? '<button class="btn btn-gold" onclick="claimDaily('+dayIndex+')">ЗАБРАТЬ +'+fmt(DAILY_REWARDS[dayIndex])+' </button>'
               : '<div style="color:var(--text-muted);font-size:12px;font-weight:700;margin-bottom:8px;">Уже забрано сегодня — заходи позже</div>')+
     '<button class="btn btn-ghost" style="margin-top:8px;" onclick="closeDailyModal()">Закрыть</button>'+
   '</div></div>';
@@ -818,7 +818,7 @@ function claimDaily(dayIndex){
   state.dailyStreak = missedStreak ? 1 : state.dailyStreak+1;
   awardMoney(DAILY_REWARDS[dayIndex],'ЕЖЕДНЕВНАЯ НАГРАДА');
   state.lastDailyClaim = now;
-  showToast('📅 Награда дня: +'+fmt(DAILY_REWARDS[dayIndex])+' 💰');
+  showToast(' Награда дня: +'+fmt(DAILY_REWARDS[dayIndex])+' ');
   updateHeader(); closeDailyModal(); saveState(); checkAchievements();
   const sub=document.getElementById('daily-hub-sub'); if(sub) sub.innerText='Уже забрано';
 }
@@ -833,8 +833,8 @@ function renderProfile(){
   const activeContracts=getActiveContracts(),done=activeContracts.filter(c=>contractStatus(c).done).length;document.getElementById('contract-progress-sub').innerText=done+'/'+activeContracts.length+' выполнено';document.getElementById('district-progress-sub').innerText=fmt(state.districtRep)+' REP';
   renderHeatStrip('profile-heat'); renderRecentRaceSummary();
   const licBox=document.getElementById('license-status-box');if(licBox){
-    if(state.licenseSuspended)licBox.innerHTML='<div class="pre-race-line"><span>🚫 Водительские права изъяты</span></div><div class="empty-note" style="padding:4px 0 10px;text-align:left;">Заезды недоступны, пока не восстановишь права.</div><button class="big-btn" onclick="buyBackLicense()">ВОССТАНОВИТЬ · '+fmt(licensePrice())+' SYND</button>';
-    else licBox.innerHTML='<div class="pre-race-line"><span>✅ Права в порядке</span><b style="color:var(--green)">ДОПУСК К ЗАЕЗДАМ</b></div>';
+    if(state.licenseSuspended)licBox.innerHTML='<div class="pre-race-line"><span> Водительские права изъяты</span></div><div class="empty-note" style="padding:4px 0 10px;text-align:left;">Заезды недоступны, пока не восстановишь права.</div><button class="big-btn" onclick="buyBackLicense()">ВОССТАНОВИТЬ · '+fmt(licensePrice())+' SYND</button>';
+    else licBox.innerHTML='<div class="pre-race-line"><span> Права в порядке</span><b style="color:var(--green)">ДОПУСК К ЗАЕЗДАМ</b></div>';
   }
 }
 

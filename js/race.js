@@ -31,7 +31,7 @@ function raceTuneProfile(car){
 function prepareRace(target,mode){
   let opp;
   if(mode==='pvp'){
-    opp={id:target.id,name:(target.challenger_name||'Игрок')+' 🎮',power:target.power,reward:target.stake*2,pvp:true,stake:target.stake,row:target};
+    opp={id:target.id,name:(target.challenger_name||'Игрок')+' ',power:target.power,reward:target.stake*2,pvp:true,stake:target.stake,row:target};
   }else{
     const list=mode==='tour'?tournamentsDB:opponentsDB;
     opp=list.find(o=>String(o.id)===String(target));
@@ -41,12 +41,12 @@ function prepareRace(target,mode){
     const r=state.tournamentRuns[key]||{};
     const count=r.day===dayKey?(Number(r.count)||0):0;
     const next=r.day===dayKey?(Number(r.next)||0):0;
-    if(count>=3){showToast('🏁 Этот турнир уже сыгран 3 раза сегодня.');renderOpponents();return;}
+    if(count>=3){showToast(' Этот турнир уже сыгран 3 раза сегодня.');renderOpponents();return;}
     if(next>now){showToast('⏳ Следующая попытка будет доступна через '+Math.ceil((next-now)/60000)+' мин.');renderOpponents();return;}
   }
   const car=carsDB.find(c=>c.id===state.activeCarId);
   if(!car||!opp)return;
-  if(state.licenseSuspended){showToast('🚫 Права изъяты. Заработай через подработку или восстанови права.');switchTab('duel-select');return;}
+  if(state.licenseSuspended){showToast(' Права изъяты. Заработай через подработку или восстанови права.');switchTab('duel-select');return;}
   const fee=opp.pvp?opp.stake:entryFeeFor(opp),fuelCost=opp.pvp?18:fuelCostFor(opp);
   if(state.coins<fee){showToast('Недостаточно SYND для входа');switchTab('jobs');return;}
   if(getFuel(car.id)<fuelCost){showToast('Недостаточно топлива');openDetail(car.id);return;}
@@ -150,7 +150,7 @@ function showRaceCockpit(){
   updateRaceZones();updateRaceHUD();
   startTrafficLight();
   c.raf=requestAnimationFrame(raceFrame);
-  if(state.settings.sound)showToast(c.launchMode==='spin'?'🔥 ШЛИФОВКА!':'🟢 Чистый старт');
+  if(state.settings.sound)showToast(c.launchMode==='spin'?' ШЛИФОВКА!':' Чистый старт');
 }
 function startTrafficLight(){
   const c=raceCtx;if(!c)return;
@@ -173,7 +173,7 @@ function showAction(text){
   const c=raceCtx;if(!c)return;
   c.actionText=text;c.actionTimer=1.35;
   const el=document.getElementById('race-action');
-  if(el){el.textContent='⚡ '+text;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');}
+  if(el){el.textContent=' '+text;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');}
 }
 
 function raceHold(type,on){
@@ -397,7 +397,7 @@ function finishRace(playerWins,c){
   recordCareerRace(playerWins,opp);recordRaceTelemetry({ts:Date.now(),won:playerWins,opponent:opp.name,route:c.route,time:c.elapsed,topSpeed:c.topSpeed||c.speed,perfectShifts:c.perfectShifts,nitroUsed:c.nitroUsed});
   addXP(xp);awardMoney(reward,playerWins?'ПОБЕДА В ЗАЕЗДЕ':'УТЕШИТЕЛЬНЫЙ ПРИЗ');
   const el=document.getElementById('race-content');
-  el.innerHTML='<div class="race3"><div class="result-box '+(playerWins?'win':'lose')+'"><div class="result-title">'+(playerWins?'🏆 ФИНИШ ПЕРВЫМ':'💥 ФИНИШ ВТОРЫМ')+'</div>'+
+  el.innerHTML='<div class="race3"><div class="result-box '+(playerWins?'win':'lose')+'"><div class="result-title">'+(playerWins?' ФИНИШ ПЕРВЫМ':' ФИНИШ ВТОРЫМ')+'</div>'+
     '<div class="result-sub">'+(playerWins?'Ты пересёк физическую линию FINISH первым.':'Ты пересёк физическую линию FINISH после соперника.')+'</div>'+
     '<div class="result-reward">'+(reward>0?'+':'')+fmt(reward)+' SYND</div>'+
     '<div class="xp-gain-box">⭐ +'+xp+' XP · '+c.elapsed.toFixed(2)+' c · MAX '+Math.round(c.topSpeed||c.speed)+' км/ч · PERFECT SHIFT '+c.perfectShifts+'</div></div>'+
@@ -409,25 +409,25 @@ function triggerPoliceStop(){
   const root=document.getElementById('police-modal-root');if(!root)return;
   state.raceStats.policeStops=(state.raceStats.policeStops||0)+1;haptic('warning');
   const line=POLICE_LINES[Math.floor(Math.random()*POLICE_LINES.length)];
-  root.innerHTML='<div class="modal-overlay"><div class="police-modal"><div class="police-lights"><span></span><span></span></div><div class="police-title">🚓 РАДАР СРАБОТАЛ</div><div class="police-line">'+line+'</div>'+
-    '<button class="big-btn police-opt negotiate" onclick="policeChoice(\'negotiate\')">🤝 Договориться</button><button class="big-btn police-opt pay" onclick="policeChoice(\'pay\')">💳 Заплатить штраф ('+fmt(POLICE_BASE_FINE)+' SYND)</button><button class="big-btn police-opt refuse" onclick="policeChoice(\'refuse\')">🙅 Спорить</button></div></div>';
+  root.innerHTML='<div class="modal-overlay"><div class="police-modal"><div class="police-lights"><span></span><span></span></div><div class="police-title"> РАДАР СРАБОТАЛ</div><div class="police-line">'+line+'</div>'+
+    '<button class="big-btn police-opt negotiate" onclick="policeChoice(\'negotiate\')"> Договориться</button><button class="big-btn police-opt pay" onclick="policeChoice(\'pay\')"> Заплатить штраф ('+fmt(POLICE_BASE_FINE)+' SYND)</button><button class="big-btn police-opt refuse" onclick="policeChoice(\'refuse\')"> Спорить</button></div></div>';
 }
 function closePoliceModal(){const r=document.getElementById('police-modal-root');if(r)r.innerHTML='';}
 function policeChoice(choice){
   let resultHtml='';
   if(choice==='pay'){const fine=POLICE_BASE_FINE;state.coins=Math.max(0,state.coins-fine);reduceHeat(2);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Штраф оплачен. Можно ехать дальше.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}
   else if(choice==='negotiate'){if(Math.random()<.55){const bribe=Math.round(POLICE_BASE_FINE*.4)+Math.round(Math.random()*80);state.coins=Math.max(0,state.coins-bribe);reduceHeat(1);resultHtml='<div class="police-line">Инспектор махнул рукой. Вопрос закрыт.</div><div class="result-reward">-'+fmt(bribe)+' SYND</div>';}else{const fine=Math.round(POLICE_BASE_FINE*1.8);state.coins=Math.max(0,state.coins-fine);state.stats.finesPaid+=fine;state.stats.finesCount++;resultHtml='<div class="police-line">Договориться не вышло. Штраф увеличен.</div><div class="result-reward">-'+fmt(fine)+' SYND</div>';}}
-  else{if(Math.random()<.35){resultHtml='<div class="police-line">Инспектор не стал связываться.</div><div class="result-reward" style="color:var(--green)">Уехал без штрафа</div>';}else{state.hasLicense=false;state.licenseSuspended=true;state.licenseSuspendCount=(state.licenseSuspendCount||0)+1;resultHtml='<div class="police-line">Права изъяты. Но игра не загнала тебя в тупик: заработок доступен в Подработке и Банке.</div><div class="result-reward">🚫 '+fmt(licensePrice())+' SYND на восстановление</div>';}}
+  else{if(Math.random()<.35){resultHtml='<div class="police-line">Инспектор не стал связываться.</div><div class="result-reward" style="color:var(--green)">Уехал без штрафа</div>';}else{state.hasLicense=false;state.licenseSuspended=true;state.licenseSuspendCount=(state.licenseSuspendCount||0)+1;resultHtml='<div class="police-line">Права изъяты. Но игра не загнала тебя в тупик: заработок доступен в Подработке и Банке.</div><div class="result-reward"> '+fmt(licensePrice())+' SYND на восстановление</div>';}}
   updateHeader();saveState();
   const root=document.getElementById('police-modal-root');
-  root.innerHTML='<div class="modal-overlay"><div class="police-modal"><div class="police-title">🚓 РЕШЕНИЕ ДПС</div>'+resultHtml+'<button class="big-btn" style="margin-top:10px;" onclick="closePoliceModal();switchTab(\'profile\')">ПОНЯТНО</button></div></div>';
+  root.innerHTML='<div class="modal-overlay"><div class="police-modal"><div class="police-title"> РЕШЕНИЕ ДПС</div>'+resultHtml+'<button class="big-btn" style="margin-top:10px;" onclick="closePoliceModal();switchTab(\'profile\')">ПОНЯТНО</button></div></div>';
 }
 function buyBackLicense(){
   const price=licensePrice();
   if(state.coins<price){showToast('Не хватает SYND. Открой Подработку — деньги можно получить без прав.');switchTab('jobs');return;}
   if(!confirm('Восстановить права за '+fmt(price)+' SYND?'))return;
   state.coins-=price;state.stats.totalSpent+=price;state.hasLicense=true;state.licenseSuspended=false;
-  showToast('✅ Права восстановлены');updateHeader();saveState();renderProfile();
+  showToast(' Права восстановлены');updateHeader();saveState();renderProfile();
 }
 
 

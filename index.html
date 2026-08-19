@@ -484,18 +484,33 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 <body>
 
 <div id="preloader">
+  <div class="pl-grid"></div>
+  <div class="pl-scan"></div>
   <div class="pl-logo">AUTO<span>SYNDICATE</span></div>
+  <div class="pl-stage" id="pl-stage">CARBON DISTRICT // BOOT</div>
   <div class="pl-bar-bg"><div class="pl-bar-fill" id="pl-bar"></div></div>
-  <div class="pl-sub">Загрузка гаража…</div>
+  <div class="pl-row"><span class="pl-sub" id="pl-sub">Проверка гаража</span><b id="pl-percent">0%</b></div>
+  <div class="pl-tip" id="pl-tip">Идеальный SHIFT сохраняет больше оборотов после переключения.</div>
 </div>
 <script>
-  window.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){ document.getElementById('pl-bar').style.width='100%'; }, 50);
-  });
-  setTimeout(function(){
-    var pl = document.getElementById('preloader');
-    if(pl){ pl.classList.add('hide'); setTimeout(function(){ pl.remove(); }, 400); }
-  }, 750);
+(function(){
+  var assets=Array.from({length:25},function(_,i){return 'assets/cars/'+(i+1)+'.webp';});
+  var tips=[
+    'Идеальный SHIFT сохраняет больше оборотов после переключения.',
+    'Уровень КПП расширяет рабочее окно переключения, но не заменяет точность.',
+    'Машина на рынке передаётся вместе с установленным тюнингом и номером.',
+    'Следите за давлением соперника: близкая дистанция делает AI агрессивнее.'
+  ];
+  var done=0,total=assets.length+2,bar=document.getElementById('pl-bar'),pct=document.getElementById('pl-percent'),sub=document.getElementById('pl-sub'),tip=document.getElementById('pl-tip');
+  function paint(label){var v=Math.min(100,Math.round(done/total*100));if(bar)bar.style.width=v+'%';if(pct)pct.textContent=v+'%';if(sub&&label)sub.textContent=label;}
+  function step(label){done++;paint(label);if(done>=total)finish();}
+  function finish(){paint('Готово');setTimeout(function(){var pl=document.getElementById('preloader');if(pl){pl.classList.add('hide');setTimeout(function(){pl.remove();},450);}},160);}
+  var ti=0,tipIv=setInterval(function(){ti=(ti+1)%tips.length;if(tip)tip.textContent=tips[ti];},900);
+  assets.forEach(function(src){var img=new Image();img.onload=img.onerror=function(){step('Загрузка машин');};img.src=src;});
+  window.addEventListener('DOMContentLoaded',function(){step('Инициализация интерфейса');});
+  window.addEventListener('load',function(){clearInterval(tipIv);step('Синхронизация систем');});
+  setTimeout(function(){if(done<total){done=total;clearInterval(tipIv);finish();}},4000);
+})();
 </script>
 
 <header>
@@ -553,7 +568,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
         <div class="gauge-label" style="text-align:left;margin-bottom:6px;">Создать вызов</div>
         <div class="pre-race-line"><span>Твоя мощность (текущая тачка)</span><b id="pvp-my-power">—</b></div>
         <div class="btn-row" style="width:100%;gap:8px;margin-top:8px;">
-          <input class="chat-input" id="pvp-stake-input" type="number" placeholder="Ставка, 💰" style="border-radius:10px;">
+          <input class="chat-input" id="pvp-stake-input" type="number" placeholder="Ставка, " style="border-radius:10px;">
           <button class="sell-btn market" style="white-space:nowrap;" onclick="postPvpChallenge()">Бросить вызов</button>
         </div>
       </div>
@@ -579,10 +594,10 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
     <div class="sell-picker">
       <div class="gauge-label" style="text-align:left;margin-bottom:6px;">Перевести другому игроку</div>
       <input class="chat-input" id="bank-to-id" placeholder="ID получателя" style="border-radius:10px;margin-bottom:8px;width:100%;">
-      <input class="chat-input" id="bank-amount" type="number" placeholder="Сумма, 💰" style="border-radius:10px;margin-bottom:8px;width:100%;">
+      <input class="chat-input" id="bank-amount" type="number" placeholder="Сумма, " style="border-radius:10px;margin-bottom:8px;width:100%;">
       <button class="big-btn" onclick="sendBankTransfer()">Отправить</button>
       <div class="chat-status" id="bank-send-status" style="margin-top:8px;"></div>
-      <div class="empty-note" style="padding:8px 0 0;text-align:left;font-size:10px;">Лимит: до 800 💰 за перевод, до 2000 💰 в сутки, одному игроку — не чаще раза в 10 минут.</div>
+      <div class="empty-note" style="padding:8px 0 0;text-align:left;font-size:10px;">Лимит: до 800  за перевод, до 2000  в сутки, одному игроку — не чаще раза в 10 минут.</div>
     </div>
     <div class="section-title"><span>История</span></div>
     <div class="list-container" id="bank-log"></div>
@@ -648,9 +663,9 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
     <div class="section-title"><span>Слоты «777»</span></div>
     <div class="game-table">
       <div class="slots-reels">
-        <div class="reel" id="reel0">🍒</div>
-        <div class="reel" id="reel1">🍋</div>
-        <div class="reel" id="reel2">🔔</div>
+        <div class="reel" id="reel0"></div>
+        <div class="reel" id="reel1"></div>
+        <div class="reel" id="reel2"></div>
       </div>
       <div id="slots-message" style="text-align:center;font-weight:900;font-size:13px;min-height:18px;"></div>
     </div>
@@ -700,7 +715,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
     <div class="heat-strip" id="profile-heat"></div>
     <div id="recent-race-summary" style="width:100%;max-width:520px;margin-bottom:10px;"></div>
     <div class="stats-grid">
-      <div class="stat-tile"><div class="val" id="p-balance">0</div><div class="lbl">Баланс 💰</div></div>
+      <div class="stat-tile"><div class="val" id="p-balance">0</div><div class="lbl">Баланс </div></div>
       <div class="stat-tile"><div class="val" id="p-cars">0</div><div class="lbl">Машин в гараже</div></div>
       <div class="stat-tile"><div class="val" id="p-races">0</div><div class="lbl">Заездов всего</div></div>
       <div class="stat-tile"><div class="val" id="p-winrate">0%</div><div class="lbl">Процент побед</div></div>
@@ -710,21 +725,21 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
       <div class="stat-tile"><div class="val" id="p-fines">0</div><div class="lbl">Штрафов от ДПС</div></div>
     </div>
     <div class="hub-grid">
-      <div class="hub-card" onclick="switchTab('districts')"><div class="ic">🗺️</div><div class="lbl">Районы</div><div class="sub" id="district-progress-sub">Карьера</div></div>
-      <div class="hub-card" onclick="switchTab('contracts')"><div class="ic">📋</div><div class="lbl">Контракты</div><div class="sub" id="contract-progress-sub">Ежедневные</div></div>
-      <div class="hub-card" onclick="switchTab('jobs')"><div class="ic">💼</div><div class="lbl">Подработка</div><div class="sub">2-й доход</div></div>
-      <div class="hub-card" onclick="switchTab('achievements')"><div class="ic">🏅</div><div class="lbl">Достижения</div><div class="sub" id="ach-progress-sub">0/0</div></div>
-      <div class="hub-card" onclick="switchTab('cases')"><div class="ic">🎁</div><div class="lbl">Кейсы</div><div class="sub">Нитро: <span id="hub-nitro-count">0</span></div></div>
-      <div class="hub-card" onclick="switchTab('leaderboard')"><div class="ic">📊</div><div class="lbl">Рейтинг</div><div class="sub">Синдикат</div></div>
-      <div class="hub-card" onclick="openDailyModal(true)"><div class="ic">📅</div><div class="lbl">Награда дня</div><div class="sub" id="daily-hub-sub">Забрать</div></div>
-      <div class="hub-card" onclick="switchTab('market')"><div class="ic">🏷️</div><div class="lbl">Рынок</div><div class="sub">Игроки продают</div></div>
-      <div class="hub-card" onclick="switchTab('chat')"><div class="ic">💬</div><div class="lbl">Чат</div><div class="sub">Синдикат онлайн</div></div>
-      <div class="hub-card" onclick="switchTab('bank')"><div class="ic">🏦</div><div class="lbl">Банк</div><div class="sub">Переводы</div></div>
-      <div class="hub-card" onclick="switchTab('settings')"><div class="ic">⚙️</div><div class="lbl">Настройки</div><div class="sub">Сейв/сброс</div></div>
+      <div class="hub-card" onclick="switchTab('districts')"><div class="ic"></div><div class="lbl">Районы</div><div class="sub" id="district-progress-sub">Карьера</div></div>
+      <div class="hub-card" onclick="switchTab('contracts')"><div class="ic"></div><div class="lbl">Контракты</div><div class="sub" id="contract-progress-sub">Ежедневные</div></div>
+      <div class="hub-card" onclick="switchTab('jobs')"><div class="ic"></div><div class="lbl">Подработка</div><div class="sub">2-й доход</div></div>
+      <div class="hub-card" onclick="switchTab('achievements')"><div class="ic"></div><div class="lbl">Достижения</div><div class="sub" id="ach-progress-sub">0/0</div></div>
+      <div class="hub-card" onclick="switchTab('cases')"><div class="ic"></div><div class="lbl">Кейсы</div><div class="sub">Нитро: <span id="hub-nitro-count">0</span></div></div>
+      <div class="hub-card" onclick="switchTab('leaderboard')"><div class="ic"></div><div class="lbl">Рейтинг</div><div class="sub">Синдикат</div></div>
+      <div class="hub-card" onclick="openDailyModal(true)"><div class="ic"></div><div class="lbl">Награда дня</div><div class="sub" id="daily-hub-sub">Забрать</div></div>
+      <div class="hub-card" onclick="switchTab('market')"><div class="ic"></div><div class="lbl">Рынок</div><div class="sub">Игроки продают</div></div>
+      <div class="hub-card" onclick="switchTab('chat')"><div class="ic"></div><div class="lbl">Чат</div><div class="sub">Синдикат онлайн</div></div>
+      <div class="hub-card" onclick="switchTab('bank')"><div class="ic"></div><div class="lbl">Банк</div><div class="sub">Переводы</div></div>
+      <div class="hub-card" onclick="switchTab('settings')"><div class="ic"></div><div class="lbl">Настройки</div><div class="sub">Сейв/сброс</div></div>
     </div>
     <div class="sell-picker" id="license-status-box" style="margin-top:12px;"></div>
     <div class="save-row">
-      <button class="btn btn-green" onclick="manualSave()">💾 СОХРАНИТЬ</button>
+      <button class="btn btn-green" onclick="manualSave()"> СОХРАНИТЬ</button>
     </div>
   </div>
 
@@ -793,7 +808,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
         <input class="chat-input" id="chat-input" maxlength="300" placeholder="Написать в чат…" onkeydown="if(event.key==='Enter')sendChatMessage()">
-        <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
+        <button class="chat-send-btn" onclick="sendChatMessage()"></button>
       </div>
     </div>
   </div>
@@ -843,7 +858,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 <script src="js/game.js"></script>
 <script src="js/race.js"></script>
 <script src="js/multiplayer.js"></script>
+<script src="js/carbon_expansion_v8.js"></script>
 <script src="js/init.js"></script>
-<script src="js/carbon_expansion_v7.js"></script>
 </body>
 </html>

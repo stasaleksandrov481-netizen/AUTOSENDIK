@@ -141,23 +141,23 @@ function loadState(){
     localStorage.setItem(SAVE_KEY,JSON.stringify(state));
   }catch(e){ console.warn('load failed, using defaults',e); state=defaultState(); }
 }
-function manualSave(){ saveState(); showToast('💾 Прогресс сохранён'); }
+function manualSave(){ saveState(); showToast(' Прогресс сохранён'); }
 function exportSave(){
   saveState();
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='autosyndicate_carbon_save.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);showToast('📤 Сохранение экспортировано');
+  a.href=url;a.download='autosyndicate_carbon_save.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);showToast(' Сохранение экспортировано');
 }
 function importSave(evt){
   const file=evt.target.files&&evt.target.files[0]; if(!file)return;
-  if(file.size>MAX_SAVE_BYTES){showToast('⚠️ Файл слишком большой');evt.target.value='';return;}
+  if(file.size>MAX_SAVE_BYTES){showToast(' Файл слишком большой');evt.target.value='';return;}
   const reader=new FileReader();
-  reader.onload=e=>{try{state=normalizeState(JSON.parse(String(e.target.result||'')));saveState();applyUiSettings();showToast('📥 Сохранение импортировано');switchTab('profile');}catch(_){showToast('⚠️ Неверный файл сохранения');}finally{evt.target.value='';}};
+  reader.onload=e=>{try{state=normalizeState(JSON.parse(String(e.target.result||'')));saveState();applyUiSettings();showToast(' Сохранение импортировано');switchTab('profile');}catch(_){showToast(' Неверный файл сохранения');}finally{evt.target.value='';}};
   reader.readAsText(file);
 }
 function resetProgress(){
   if(!confirm('Точно сбросить весь прогресс? Это действие необратимо.'))return;
   if(!confirm('Последнее предупреждение: машины, деньги и достижения будут удалены. Продолжить?'))return;
-  localStorage.removeItem(SAVE_KEY);LEGACY_SAVE_KEYS.forEach(k=>localStorage.removeItem(k));state=defaultState();applyUiSettings();showToast('🗑️ Прогресс сброшен');switchTab('garage');
+  localStorage.removeItem(SAVE_KEY);LEGACY_SAVE_KEYS.forEach(k=>localStorage.removeItem(k));state=defaultState();applyUiSettings();showToast(' Прогресс сброшен');switchTab('garage');
 }
 function applyUiSettings(){
   document.body.classList.toggle('reduce-motion',!!state.settings.reducedMotion);

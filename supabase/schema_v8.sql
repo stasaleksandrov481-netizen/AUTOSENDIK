@@ -1,4 +1,4 @@
--- AutoSyndicate: Carbon District — hardened Supabase schema v5
+-- AutoSyndicate: Carbon District — Supabase schema v8
 -- Run in Supabase SQL Editor.
 -- IMPORTANT: Dashboard -> Authentication -> Providers -> Anonymous Sign-Ins must be enabled.
 -- The browser uses only a publishable key. Never place service_role in the client.
