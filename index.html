@@ -388,7 +388,7 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 
 .race-map:before{content:'';position:absolute;inset:18px 12px;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.035) 47px 48px),linear-gradient(90deg,#161a1d,#101316);border-radius:9px;}
 .map-road{height:104px;position:relative;z-index:1;border-radius:9px;border-top:2px dashed rgba(255,255,255,.08);border-bottom:2px dashed rgba(255,255,255,.08);margin:12px 0;background:linear-gradient(180deg,rgba(255,255,255,.015),rgba(255,255,255,.035));}
-.map-car{position:absolute;width:30px;height:18px;border-radius:7px;background:var(--accent);box-shadow:0 0 12px var(--accent-glow);top:17px;z-index:3;will-change:left,transform;transform:translateX(-50%);}
+.map-car{position:absolute;width:30px;height:18px;border-radius:7px;background:var(--accent);box-shadow:0 0 12px var(--accent-glow);top:17px;z-index:3;will-change:transform;}
 .map-car:after{content:'';position:absolute;left:6px;right:6px;top:4px;height:6px;border-radius:2px;background:#fff5;}
 .map-car.ai{background:#9ca3af;box-shadow:0 0 9px rgba(156,163,175,.3);top:67px;}
 .map-start,.map-finish{position:absolute;top:8px;bottom:8px;width:2px;background:rgba(255,255,255,.22);z-index:2;}
@@ -797,3 +797,11 @@ nav{position:fixed;bottom:0;width:100%;background:rgba(19,19,26,.95);backdrop-fi
 <script src="js/init.js"></script>
 </body>
 </html>
+<style>
+/* v7 race clarity */
+.race-gap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:5px 9px;border:1px solid #3a3d48;border-radius:999px;background:rgba(5,6,9,.88);font-size:9px;font-weight:1000;letter-spacing:.5px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 20px #0008}
+.map-car span{position:absolute;left:50%;top:-15px;transform:translateX(-50%);font-size:7px;font-weight:1000;letter-spacing:.5px;color:#fff;opacity:.85}
+.map-car.ai span{color:#d1d5db}
+.race-lead{margin:6px 0 8px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.4px;color:var(--text-muted)}
+.race-map{min-height:128px}
+</style>
