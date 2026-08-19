@@ -1589,4 +1589,549 @@ function rltSpin(){
       showToast("🎉 Выигрыш! +"+fmt(payout-bet)+" 💰");
       flashResult(table, true);
     } else {
-      showToast("😔 Не повезло. Чи
+      showToast("😔 Не повезло. Число: "+n);
+      flashResult(table, false);
+    }
+    updateHeader(); saveState(); checkAchievements();
+  }, 900);
+}
+
+/* ==================== SLOTS ==================== */
+const SLOT_SYMBOLS = ['🍒','🍋','🔔','⭐','💎','7️⃣'];
+const SLOT_WEIGHTS = [30,26,20,13,8,3];
+function slotsAdjustBet(delta){ const i=document.getElementById('slots-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function slotsMaxBet(){ document.getElementById('slots-bet-input').value=state.coins; clampBet(document.getElementById('slots-bet-input'),10); }
+function weightedSymbol(){
+  const total = SLOT_WEIGHTS.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<SLOT_SYMBOLS.length;i++){ if(r<SLOT_WEIGHTS[i]) return SLOT_SYMBOLS[i]; r-=SLOT_WEIGHTS[i]; }
+  return SLOT_SYMBOLS[0];
+}
+const SLOT_PAYOUTS = {'🍒':3,'🍋':4,'🔔':6,'⭐':10,'💎':20,'7️⃣':50};
+function slotsSpin(){
+  const bet = clampBet(document.getElementById('slots-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const reels=[document.getElementById('reel0'),document.getElementById('reel1'),document.getElementById('reel2')];
+  reels.forEach(r=>r.classList.add('spin'));
+  document.getElementById('slots-message').innerText='';
+  let ticks=0;
+  const iv=setInterval(()=>{
+    reels.forEach(r=>r.innerText=weightedSymbol());
+    ticks++;
+    if(ticks>12){
+      clearInterval(iv);
+      const final=[weightedSymbol(),weightedSymbol(),weightedSymbol()];
+      reels.forEach((r,i)=>{ r.innerText=final[i]; r.classList.remove('spin'); });
+      let payout=0, msg='';
+      if(final[0]===final[1] && final[1]===final[2]){
+        payout = bet*SLOT_PAYOUTS[final[0]];
+        msg = '🎰 ДЖЕКПОТ! '+final[0]+final[0]+final[0]+' — x'+SLOT_PAYOUTS[final[0]];
+      } else if(final[0]===final[1] || final[1]===final[2] || final[0]===final[2]){
+        payout = Math.round(bet*1.5);
+        msg = '✨ Пара совпала — небольшой выигрыш';
+      } else { msg='Не повезло, крутите ещё'; }
+      const table=document.querySelector('#screen-slots');
+      if(payout>0){ state.coins+=payout; state.stats.casinoWon+=payout-bet; flashResult(table,true); }
+      else { flashResult(table,false); }
+      document.getElementById('slots-message').innerText=msg;
+      document.getElementById('slots-message').style.color = payout>0?'var(--green)':'var(--text-muted)';
+      updateHeader(); saveState(); checkAchievements();
+    }
+  },80);
+}
+
+/* ==================== DICE ==================== */
+function diceUpdate(){
+  const target = parseInt(document.getElementById('dice-slider').value);
+  document.getElementById('dice-target').innerText = target;
+  const chance = target-1;
+  const mult = (97/chance).toFixed(2);
+  document.getElementById('dice-chance').innerText = chance+'%';
+  document.getElementById('dice-mult').innerText = 'x'+mult;
+}
+function diceAdjustBet(delta){ const i=document.getElementById('dice-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
+function diceMaxBet(){ document.getElementById('dice-bet-input').value=state.coins; clampBet(document.getElementById('dice-bet-input'),10); }
+function diceRoll(){
+  const bet = clampBet(document.getElementById('dice-bet-input'),10);
+  if(bet>state.coins || bet<10){ showToast("Некорректная ставка"); return; }
+  const target = parseInt(document.getElementById('dice-slider').value);
+  state.coins-=bet; state.stats.casinoWagered+=bet; updateHeader();
+  const resEl=document.getElementById('dice-result');
+  resEl.innerText='...'; resEl.style.color='var(--text-muted)';
+  setTimeout(()=>{
+    const roll = Math.floor(Math.random()*100)+1;
+    resEl.innerText=roll;
+    const win = roll<target;
+    const table=document.querySelector('#screen-dice');
+    if(win){
+      const mult = 97/(target-1);
+      const payout = Math.round(bet*mult);
+      state.coins+=payout; state.stats.casinoWon+=payout-bet;
+      resEl.style.color='var(--green)';
+      showToast("🎲 Выигрыш! +"+fmt(payout-bet)+" 💰");
+      flashResult(table,true);
+    } else {
+      resEl.style.color='var(--accent)';
+      showToast("🎲 Мимо. Выпало: "+roll);
+      flashResult(table,false);
+    }
+    updateHeader(); saveState(); checkAchievements();
+  }, 500);
+}
+
+/* ==================== ACHIEVEMENTS ==================== */
+const achievementsDB = [
+  { id:'first_win', name:'Первая кровь', desc:'Выиграй свою первую дуэль', icon:'🏆', reward:100, check:s=>s.stats.wins>=1 },
+  { id:'ten_wins', name:'Ветеран трассы', desc:'Одержи 10 побед', icon:'🥇', reward:500, check:s=>s.stats.wins>=10 },
+  { id:'five_cars', name:'Коллекционер', desc:'Владей 5 машинами одновременно', icon:'🚘', reward:400, check:s=>s.ownedCars.length>=5 },
+  { id:'all_cars', name:'Весь гараж синдиката', desc:'Собери все машины в игре', icon:'🏁', reward:5000, check:s=>s.ownedCars.length>=27 },
+  { id:'lvl10', name:'Авторитет района', desc:'Достигни 10 уровня', icon:'⭐', reward:600, check:s=>s.level>=10 },
+  { id:'first_fine', name:'Знакомство с ДПС', desc:'Получи первый штраф от полиции', icon:'🚓', reward:50, check:s=>s.stats.finesCount>=1 },
+  { id:'bj_win', name:'Карточный игрок', desc:'Выиграй раунд в блэкджек', icon:'🃏', reward:150, check:s=>s.stats.casinoWon>0 && document.getElementById('bj-message') },
+  { id:'max_tune', name:'Гараж мечты', desc:'Прокачай тюнинг любой машины до максимума во всех категориях', icon:'🔧', reward:800, check:s=>Object.values(s.upgrades).some(u=>u && TUNE_TYPES.every(t=>u[t.key]>=t.hpPerStage.length)) },
+  { id:'earn50k', name:'Барон подполья', desc:'Заработай суммарно 50 000 💰', icon:'💰', reward:1000, check:s=>s.stats.totalEarned>=50000 },
+  { id:'daily7', name:'Верный синдикату', desc:'Забирай ежедневную награду 7 дней подряд', icon:'📅', reward:700, check:s=>s.dailyStreak>=7 },
+  { id:'secret_car', name:'Тень подполья', desc:'Стань владельцем мифической машины', icon:'👻', reward:1500, check:s=>s.ownedCars.includes(26)||s.ownedCars.includes(27) },
+  { id:'boss_slayer', name:'Убийца боссов', desc:'Победи одного из боссов подполья', icon:'👑', reward:2000, check:s=>s.stats.wins>0 && s.level>=11 }
+];
+function checkAchievements(){
+  let any=false;
+  achievementsDB.forEach(a=>{
+    if(state.achievements[a.id]) return;
+    let passed=false;
+    try{ passed = a.check(state); }catch(e){ passed=false; }
+    if(passed){
+      state.achievements[a.id]=true;
+      state.coins += a.reward;
+      showToast('🏅 Достижение: '+a.name+' (+'+fmt(a.reward)+' 💰)');
+      any=true;
+    }
+  });
+  if(any){ updateHeader(); saveState(); }
+  const sub=document.getElementById('ach-progress-sub');
+  if(sub) sub.innerText = Object.keys(state.achievements).length+'/'+achievementsDB.length;
+}
+function renderAchievements(){
+  const c=document.getElementById('ach-list');
+  c.innerHTML='';
+  achievementsDB.forEach(a=>{
+    const done = !!state.achievements[a.id];
+    c.innerHTML += '<div class="ach-card '+(done?'done':'')+'">'+
+      '<div class="ach-ic">'+a.icon+'</div>'+
+      '<div class="ach-body"><b>'+a.name+'</b><span>'+a.desc+'</span></div>'+
+      '<div class="ach-reward">'+(done?'✅':'+'+fmt(a.reward))+'</div>'+
+    '</div>';
+  });
+}
+
+/* ==================== CASES ==================== */
+const casesDB = [
+  { id:'bronze', name:'Бронзовый кейс', icon:'🥉', price:300, desc:'Немного монет или заряд нитро' },
+  { id:'silver', name:'Серебряный кейс', icon:'🥈', price:1200, desc:'Хорошая пачка денег и шанс на нитро' },
+  { id:'gold', name:'Золотой кейс', icon:'🥇', price:4000, desc:'Крупный куш и редкий шанс на мифическую машину' }
+];
+function renderCases(){
+  const c=document.getElementById('cases-list');
+  c.innerHTML='';
+  casesDB.forEach(cs=>{
+    c.innerHTML += '<div class="case-card"><div class="case-ic">'+cs.icon+'</div><div class="case-name">'+cs.name+'</div><div class="case-desc">'+cs.desc+'</div>'+
+      '<button class="btn btn-gold" '+(state.coins<cs.price?'disabled':'')+' onclick="openCase(\''+cs.id+'\')">ОТКРЫТЬ ЗА '+fmt(cs.price)+' 💰</button></div>';
+  });
+}
+function openCase(caseId){
+  const cs = casesDB.find(c=>c.id===caseId);
+  if(state.coins<cs.price){ showToast("Недостаточно денег"); return; }
+  state.coins-=cs.price; state.stats.totalSpent+=cs.price; state.stats.casesOpened++;
+  const r = Math.random();
+  let resultMsg='';
+  if(caseId==='bronze'){
+    if(r<0.6){ const c=Math.round(cs.price*(0.5+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.9){ state.nitro+=1; resultMsg='+1 заряд нитро ⚡'; }
+    else { const c=Math.round(cs.price*2.5); state.coins+=c; resultMsg='Удача! +'+fmt(c)+' 💰'; }
+  } else if(caseId==='silver'){
+    if(r<0.5){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.85){ state.nitro+=2; resultMsg='+2 заряда нитро ⚡'; }
+    else { const c=Math.round(cs.price*3); state.coins+=c; resultMsg='Крупная удача! +'+fmt(c)+' 💰'; }
+  } else {
+    if(r<0.45){ const c=Math.round(cs.price*(0.6+Math.random())); state.coins+=c; resultMsg='+'+fmt(c)+' 💰'; }
+    else if(r<0.8){ state.nitro+=3; resultMsg='+3 заряда нитро ⚡'; }
+    else if(r<0.985){ const c=Math.round(cs.price*3.5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+    else {
+      const secretIds=[26,27].filter(id=>!state.ownedCars.includes(id));
+      if(secretIds.length>0){
+        const id=secretIds[Math.floor(Math.random()*secretIds.length)];
+        state.ownedCars.push(id);
+        resultMsg='🌟 ЛЕГЕНДАРНЫЙ ДРОП! Машина "'+carsDB.find(c=>c.id===id).name+'" теперь ваша!';
+      } else { const c=Math.round(cs.price*5); state.coins+=c; resultMsg='Джекпот! +'+fmt(c)+' 💰'; }
+    }
+  }
+  showToast('🎁 '+resultMsg);
+  updateHeader(); renderCases(); saveState(); checkAchievements();
+}
+
+/* ==================== LEADERBOARD ==================== */
+const LB_BOTS = [
+  {name:'Барон трассы Вадим', val:184000},{name:'Легенда подполья Дариан', val:142500},
+  {name:'Финалист «Полночь»', val:98700},{name:'Августина', val:61200},
+  {name:'Тень', val:45300},{name:'Толян с раёна', val:22100},
+  {name:'Ночной Гонщик Феникс', val:15400},{name:'Дворовый Стас', val:6200}
+];
+function renderLeaderboard(){
+  const c=document.getElementById('lb-list');
+  const rows = LB_BOTS.map(b=>({name:b.name, val:b.val, me:false}));
+  rows.push({name: state.playerName+' (вы)', val: state.stats.totalEarned, me:true});
+  rows.sort((a,b)=>b.val-a.val);
+  c.innerHTML='';
+  rows.forEach((r,i)=>{
+    const rankCls = i===0?'top1':i===1?'top2':i===2?'top3':'';
+    c.innerHTML += '<div class="lb-row '+(r.me?'me':'')+'"><div class="lb-rank '+rankCls+'">#'+(i+1)+'</div><div class="lb-name">'+r.name+'</div><div class="lb-val">'+fmt(r.val)+' 💰</div></div>';
+  });
+}
+
+/* ==================== SETTINGS ==================== */
+function renderSettings(){
+  document.getElementById('set-sound').classList.toggle('on', state.settings.sound);
+  document.getElementById('set-anim').classList.toggle('on', state.settings.animations);
+  const el = document.getElementById('last-saved-text');
+  if(el) el.innerText = state.lastSaved ? new Date(state.lastSaved).toLocaleTimeString('ru-RU') : '—';
+}
+function toggleSetting(key){
+  state.settings[key] = !state.settings[key];
+  renderSettings(); saveState();
+}
+
+/* ==================== DAILY REWARD ==================== */
+const DAILY_REWARDS = [150,200,300,400,600,800,1200];
+function checkDailyEligible(){
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  return state.lastDailyClaim===0 || hours>=20;
+}
+function openDailyModal(force){
+  if(!force && !checkDailyEligible()) return;
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  const eligible = state.lastDailyClaim===0 || hours>=20;
+  const missedStreak = state.lastDailyClaim!==0 && hours>48;
+  const dayIndex = missedStreak ? 0 : (state.dailyStreak % 7);
+  let strip='';
+  for(let i=0;i<7;i++){
+    const claimed = i<dayIndex;
+    const today = i===dayIndex;
+    strip += '<div class="daily-day '+(claimed?'claimed':'')+' '+(today?'today':'')+'">Д'+(i+1)+'<br>'+DAILY_REWARDS[i]+'</div>';
+  }
+  const root=document.getElementById('daily-modal-root');
+  root.innerHTML = '<div class="modal-overlay" id="daily-overlay"><div class="modal-box">'+
+    '<div style="font-size:40px;">📅</div>'+
+    '<div style="font-size:17px;font-weight:900;margin:8px 0;">Ежедневная награда</div>'+
+    '<div style="color:var(--text-muted);font-size:12px;font-weight:700;">День '+(dayIndex+1)+' из 7</div>'+
+    '<div class="daily-strip">'+strip+'</div>'+
+    (eligible ? '<button class="btn btn-gold" onclick="claimDaily('+dayIndex+')">ЗАБРАТЬ +'+fmt(DAILY_REWARDS[dayIndex])+' 💰</button>'
+              : '<div style="color:var(--text-muted);font-size:12px;font-weight:700;margin-bottom:8px;">Уже забрано сегодня — заходи позже</div>')+
+    '<button class="btn btn-ghost" style="margin-top:8px;" onclick="closeDailyModal()">Закрыть</button>'+
+  '</div></div>';
+}
+function claimDaily(dayIndex){
+  const now=Date.now();
+  const hours = (now-state.lastDailyClaim)/3600000;
+  const missedStreak = state.lastDailyClaim!==0 && hours>48;
+  state.dailyStreak = missedStreak ? 1 : state.dailyStreak+1;
+  state.coins += DAILY_REWARDS[dayIndex];
+  state.lastDailyClaim = now;
+  showToast('📅 Награда дня: +'+fmt(DAILY_REWARDS[dayIndex])+' 💰');
+  updateHeader(); closeDailyModal(); saveState(); checkAchievements();
+  const sub=document.getElementById('daily-hub-sub'); if(sub) sub.innerText='Уже забрано';
+}
+function closeDailyModal(){ document.getElementById('daily-modal-root').innerHTML=''; }
+
+/* ==================== PROFILE ==================== */
+function renderProfile(){
+  updateHeader();
+  updateAvatarUI();
+  document.getElementById('profile-name').innerText = state.playerName;
+  document.getElementById('profile-lvl').innerText = state.level;
+  document.getElementById('p-balance').innerText = fmt(state.coins);
+  document.getElementById('p-cars').innerText = state.ownedCars.length;
+  document.getElementById('p-races').innerText = state.stats.races;
+  const wr = state.stats.races>0 ? Math.round(state.stats.wins/state.stats.races*100) : 0;
+  document.getElementById('p-winrate').innerText = wr+"%";
+  document.getElementById('p-wins').innerText = state.stats.wins;
+  document.getElementById('p-losses').innerText = state.stats.losses;
+  document.getElementById('p-earned').innerText = fmt(state.stats.totalEarned);
+  document.getElementById('p-fines').innerText = state.stats.finesCount;
+  const need = xpNeeded(state.level);
+  document.getElementById('xp-text').innerText = state.xp+'/'+need;
+  document.getElementById('xp-fill').style.width = Math.round(state.xp/need*100)+'%';
+  document.getElementById('ach-progress-sub').innerText = Object.keys(state.achievements).length+'/'+achievementsDB.length;
+  document.getElementById('hub-nitro-count').innerText = state.nitro;
+  document.getElementById('daily-hub-sub').innerText = checkDailyEligible() ? 'Забрать!' : 'Уже забрано';
+}
+
+/* ==================== SUPABASE (МУЛЬТИПЛЕЕР: РЫНОК + ЧАТ) ==================== */
+const SUPABASE_URL = 'https://jkmspwpfbebynwubykdf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_byHJILmOo07-I7aEJF3uMA_jIJqMFAb';
+let sb = null;
+let marketChannel = null;
+let chatChannel = null;
+
+function initSupabase(){
+  if(sb) return sb;
+  try{
+    if(window.supabase && window.supabase.createClient){
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      subscribeMarket();
+    }
+  }catch(e){ console.warn('supabase init failed', e); }
+  return sb;
+}
+
+/* ---------- РЫНОК ---------- */
+let marketSub = 'browse';
+function switchMarketSub(sub){
+  marketSub = sub;
+  document.getElementById('msub-browse').classList.toggle('active', sub==='browse');
+  document.getElementById('msub-sell').classList.toggle('active', sub==='sell');
+  document.getElementById('market-browse-wrap').style.display = sub==='browse' ? '' : 'none';
+  document.getElementById('market-sell-wrap').style.display = sub==='sell' ? '' : 'none';
+  if(sub==='sell') renderSellPicker();
+}
+function openMarket(){
+  initSupabase();
+  switchMarketSub(marketSub);
+  refreshMarket();
+}
+function subscribeMarket(){
+  if(!sb || marketChannel) return;
+  marketChannel = sb.channel('market_cars_rt')
+    .on('postgres_changes', {event:'*', schema:'public', table:'market_cars'}, ()=>{
+      const scr=document.getElementById('screen-market');
+      if(scr && scr.classList.contains('active')) refreshMarket();
+    })
+    .subscribe();
+}
+async function refreshMarket(){
+  const statusEl = document.getElementById('market-status');
+  if(!sb){ if(statusEl) statusEl.innerText='⚠️ Рынок недоступен (нет подключения к серверу)'; return; }
+  if(statusEl) statusEl.innerText='Загрузка лотов…';
+  try{
+    const {data, error} = await sb.from('market_cars').select('*').eq('status','active').order('id',{ascending:false}).limit(60);
+    if(error) throw error;
+    renderMarketList(data||[]);
+    if(statusEl) statusEl.innerText = (data&&data.length) ? 'Активных лотов: '+data.length : 'Рынок пуст';
+  }catch(e){ console.warn(e); if(statusEl) statusEl.innerText='⚠️ Не удалось загрузить рынок'; }
+  claimSoldProceeds();
+  renderMyListings();
+}
+function renderMarketList(rows){
+  const c=document.getElementById('market-list'); if(!c) return;
+  c.innerHTML='';
+  if(!rows.length){ c.innerHTML='<div class="empty-note">Пока никто ничего не продаёт. Загляни позже!</div>'; return; }
+  rows.forEach(r=>{
+    const car=carsDB.find(x=>x.id===parseInt(r.car_id,10));
+    if(!car) return;
+    const isMine = r.seller_id===state.playerId;
+    c.innerHTML += '<div class="listing-card">'+
+      '<div class="listing-head"><span class="listing-name">'+car.name+'</span>'+(isMine?'<span class="mine-tag">Ваш лот</span>':'')+'</div>'+
+      '<div class="listing-meta">Продавец: '+escapeHtml(r.seller_name||'Игрок')+' · '+car.tier+' · '+car.power+' л.с.</div>'+
+      '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' 💰</span>'+
+      (isMine
+        ? '<button class="sell-btn" onclick="cancelListing('+r.id+')">Снять с продажи</button>'
+        : '<button class="btn btn-buy" style="width:auto;padding:8px 14px;" onclick="buyListing('+r.id+')">КУПИТЬ</button>')+
+      '</div></div>';
+  });
+}
+function renderSellPicker(){
+  const box=document.getElementById('sell-picker'); if(!box) return;
+  const mine = carsDB.filter(c=>state.ownedCars.includes(c.id));
+  if(mine.length<=1){ box.innerHTML='<div class="empty-note">Нужна хотя бы одна запасная машина в гараже, чтобы её продать.</div>'; return; }
+  let html='<div class="gauge-label" style="text-align:left;margin-bottom:6px;">Выбери машину на продажу</div>';
+  mine.forEach(car=>{
+    const statePrice = stateSellPrice(car);
+    html += '<div class="sell-row"><div><div class="sell-row-name">'+car.name+'</div><div class="sell-row-sub">'+car.tier+'</div></div>'+
+      '<div class="btn-row" style="width:auto;gap:6px;">'+
+      '<button class="sell-btn market" onclick="promptListCar('+car.id+')">На рынок</button>'+
+      '<button class="sell-btn state" onclick="sellToState('+car.id+')">Гос-во '+fmt(statePrice)+'</button>'+
+      '</div></div>';
+  });
+  box.innerHTML = html;
+}
+function stateSellPrice(car){
+  return Math.max(50, Math.round(car.price*0.35 * (0.6+getCondition(car.id)/100*0.4)));
+}
+function promptListCar(carId){
+  const car=carsDB.find(c=>c.id===carId);
+  const suggested = Math.round(car.price*0.85)||100;
+  const input = window.prompt('Цена продажи для "'+car.name+'" (в игровой валюте). Ориентир: '+fmt(suggested), suggested);
+  if(input===null) return;
+  const price = parseInt(input,10);
+  if(!price || price<=0){ showToast('Некорректная цена'); return; }
+  listCarForSale(carId, price);
+}
+async function listCarForSale(carId, price){
+  if(!sb){ showToast('Рынок недоступен'); return; }
+  if(!state.ownedCars.includes(carId)) return;
+  if(state.ownedCars.length<=1){ showToast('Нельзя продать последнюю машину'); return; }
+  const car=carsDB.find(c=>c.id===carId);
+  try{
+    const {error} = await sb.from('market_cars').insert({
+      seller_id: state.playerId, seller_name: state.playerName, car_id: String(carId), price: price
+    });
+    if(error) throw error;
+    state.ownedCars = state.ownedCars.filter(id=>id!==carId);
+    if(state.activeCarId===carId) state.activeCarId = state.ownedCars[0];
+    showToast('🏷️ "'+car.name+'" выставлена на рынок за '+fmt(price)+' 💰');
+    updateHeader(); saveState(); refreshMarket(); renderSellPicker();
+  }catch(e){ console.warn(e); showToast('⚠️ Не удалось выставить лот (проверь настройки Supabase)'); }
+}
+async function cancelListing(id){
+  if(!sb) return;
+  try{
+    const {data,error} = await sb.from('market_cars').select('*').eq('id',id).single();
+    if(error||!data) throw error||new Error('not found');
+    if(data.seller_id!==state.playerId || data.status!=='active'){ showToast('Лот недоступен'); refreshMarket(); return; }
+    const {error:updErr} = await sb.from('market_cars').update({status:'cancelled'}).eq('id',id).eq('status','active');
+    if(updErr) throw updErr;
+    const carId = parseInt(data.car_id,10);
+    if(!state.ownedCars.includes(carId)) state.ownedCars.push(carId);
+    showToast('Лот снят, машина вернулась в гараж');
+    saveState(); refreshMarket();
+  }catch(e){ console.warn(e); showToast('⚠️ Ошибка при снятии лота'); }
+}
+async function buyListing(id){
+  if(!sb) return;
+  try{
+    const {data,error} = await sb.from('market_cars').select('*').eq('id',id).eq('status','active').single();
+    if(error||!data){ showToast('Лот уже продан или недоступен'); refreshMarket(); return; }
+    if(data.seller_id===state.playerId){ showToast('Нельзя купить свой же лот'); return; }
+    const carId = parseInt(data.car_id,10);
+    if(state.ownedCars.includes(carId)){ showToast('У вас уже есть такая машина'); return; }
+    if(state.coins<data.price){ showToast('Недостаточно денег'); return; }
+    const {data:upd, error:updErr} = await sb.from('market_cars')
+      .update({status:'sold', buyer_id: state.playerId, sold_at: new Date().toISOString()})
+      .eq('id',id).eq('status','active').select();
+    if(updErr) throw updErr;
+    if(!upd || !upd.length){ showToast('Лот уже купил другой игрок'); refreshMarket(); return; }
+    state.coins -= data.price; state.stats.totalSpent += data.price;
+    state.ownedCars.push(carId);
+    getFuel(carId); getCondition(carId); getUpg(carId);
+    const car=carsDB.find(c=>c.id===carId);
+    showToast('🚗 Куплено у игрока: '+(car?car.name:'машина'));
+    updateHeader(); saveState(); refreshMarket();
+  }catch(e){ console.warn(e); showToast('⚠️ Не удалось купить лот'); }
+}
+function sellToState(carId){
+  if(!state.ownedCars.includes(carId)) return;
+  if(state.ownedCars.length<=1){ showToast('Нельзя продать последнюю машину'); return; }
+  const car=carsDB.find(c=>c.id===carId);
+  const price = stateSellPrice(car);
+  if(!confirm('Продать "'+car.name+'" государству за '+fmt(price)+' 💰? Это заметно ниже рыночной цены — зато мгновенно.')) return;
+  state.coins += price; state.stats.totalEarned += price;
+  state.ownedCars = state.ownedCars.filter(id=>id!==carId);
+  if(state.activeCarId===carId) state.activeCarId = state.ownedCars[0];
+  delete state.upgrades[carId]; delete state.fuel[carId]; delete state.condition[carId];
+  showToast('🏛️ Продано государству за '+fmt(price)+' 💰');
+  updateHeader(); saveState(); renderSellPicker();
+}
+async function claimSoldProceeds(){
+  if(!sb) return;
+  try{
+    const {data,error} = await sb.from('market_cars').select('*').eq('seller_id', state.playerId).eq('status','sold');
+    if(error || !data || !data.length) return;
+    if(!Array.isArray(state.claimedSaleIds)) state.claimedSaleIds=[];
+    let credited=0, total=0;
+    data.forEach(row=>{
+      if(state.claimedSaleIds.includes(row.id)) return;
+      state.coins += row.price; state.stats.totalEarned += row.price;
+      state.claimedSaleIds.push(row.id);
+      credited++; total+=row.price;
+      sb.from('market_cars').update({status:'settled'}).eq('id',row.id).eq('status','sold');
+    });
+    if(credited){ showToast('💰 Продано на рынке: +'+fmt(total)+' 💰 ('+credited+' лот.)'); updateHeader(); saveState(); }
+  }catch(e){ console.warn(e); }
+}
+async function renderMyListings(){
+  const c=document.getElementById('market-mine-list'); if(!c || !sb) return;
+  try{
+    const {data} = await sb.from('market_cars').select('*').eq('seller_id', state.playerId).order('id',{ascending:false}).limit(30);
+    c.innerHTML='';
+    if(!data || !data.length){ c.innerHTML='<div class="empty-note">Вы пока ничего не продавали на рынке</div>'; return; }
+    const labels = {active:'На продаже', sold:'Продано ✅', settled:'Продано ✅', cancelled:'Снято с продажи'};
+    data.forEach(r=>{
+      const car=carsDB.find(x=>x.id===parseInt(r.car_id,10));
+      c.innerHTML += '<div class="listing-card"><div class="listing-head"><span class="listing-name">'+(car?car.name:'Машина #'+r.car_id)+'</span><span class="listing-meta">'+(labels[r.status]||r.status)+'</span></div>'+
+        '<div class="listing-head"><span class="listing-price">'+fmt(r.price)+' 💰</span>'+
+        (r.status==='active' ? '<button class="sell-btn" onclick="cancelListing('+r.id+')">Снять</button>' : '')+
+        '</div></div>';
+    });
+  }catch(e){ console.warn(e); }
+}
+
+/* ---------- ЧАТ ---------- */
+function openChat(){
+  initSupabase();
+  loadChatHistory();
+  subscribeChat();
+  setTimeout(()=>{ const i=document.getElementById('chat-input'); if(i) i.focus(); }, 200);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function appendChatMessage(m){
+  const c=document.getElementById('chat-messages'); if(!c) return;
+  const isMe = m.user_name===state.playerName;
+  const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : '';
+  const div=document.createElement('div');
+  div.className='chat-msg'+(isMe?' me':'');
+  div.innerHTML='<div class="chat-msg-name">'+escapeHtml(m.user_name)+'</div><div class="chat-msg-text">'+escapeHtml(m.message)+'</div><div class="chat-msg-time">'+time+'</div>';
+  c.appendChild(div);
+}
+async function loadChatHistory(){
+  const statusEl=document.getElementById('chat-status');
+  if(!sb){ if(statusEl){ statusEl.innerText='⚠️ Чат недоступен (нет подключения к серверу)'; statusEl.classList.remove('on'); } return; }
+  if(statusEl) statusEl.innerText='Загрузка сообщений…';
+  try{
+    const {data,error} = await sb.from('chat_messages').select('*').order('id',{ascending:false}).limit(50);
+    if(error) throw error;
+    const msgs=(data||[]).slice().reverse();
+    const c=document.getElementById('chat-messages'); c.innerHTML='';
+    msgs.forEach(appendChatMessage);
+    c.scrollTop=c.scrollHeight;
+    if(statusEl){ statusEl.innerText='Онлайн'; statusEl.classList.add('on'); }
+  }catch(e){ console.warn(e); if(statusEl){ statusEl.innerText='⚠️ Ошибка загрузки чата'; statusEl.classList.remove('on'); } }
+}
+function subscribeChat(){
+  if(!sb || chatChannel) return;
+  chatChannel = sb.channel('chat_messages_rt')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'chat_messages'}, payload=>{
+      appendChatMessage(payload.new);
+      const c=document.getElementById('chat-messages'); if(c) c.scrollTop=c.scrollHeight;
+    })
+    .subscribe();
+}
+async function sendChatMessage(){
+  const input=document.getElementById('chat-input');
+  const text=(input.value||'').trim();
+  if(!text || !sb) return;
+  input.value='';
+  try{
+    const {error} = await sb.from('chat_messages').insert({ user_name: state.playerName, message: text.slice(0,300) });
+    if(error) throw error;
+  }catch(e){ console.warn(e); showToast('⚠️ Сообщение не отправлено'); }
+}
+
+/* ==================== INIT ==================== */
+loadState();
+initTelegram();
+rltInit();
+diceUpdate();
+updateHeader();
+updateAvatarUI();
+renderGarage();
+window.addEventListener('load', initSupabase);
+setTimeout(initSupabase, 1500);
+setTimeout(()=>{ if(checkDailyEligible()) openDailyModal(true); }, 500);
+setInterval(saveState, 20000);
+</script>
+</body>
+</html>
