@@ -41,7 +41,7 @@ function prepareRace(target,mode){
     eventRoll,radarChance,radar:false,gas:false,brake:false,gear:1,rpm:1200,
     speed:0,distance:0,aiDistance:0,aiSpeed:0,finished:false,launchMode:null,
     shiftCount:0,goodShifts:0,perfectShifts:0,errors:0,lastTs:0,loop:null,
-    maxSpeed:Math.round(145+getEffectivePower(car)*.24),redline:8500};
+    maxSpeed:Math.round(190+getEffectivePower(car)*.58),redline:8500};
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-race').classList.add('active');
   document.getElementById('main-scroll').scrollTop=0;
@@ -79,10 +79,10 @@ function showRaceCockpit(){
   const c=raceCtx,car=carsDB.find(x=>x.id===state.activeCarId),o=c.opp;
   const el=document.getElementById('race-content');
   el.innerHTML='<div class="race3"><div class="race3-top"><div class="race3-driver"><b>'+escapeHtml(car.name)+'</b><span id="race-pow">'+getEffectivePower(car)+' л.с.</span></div><div class="race3-vs">VS</div><div class="race3-driver" style="text-align:right;"><b>'+escapeHtml(o.name)+'</b><span>'+o.power+' л.с.</span></div></div>'+
-    '<div class="race-map"><div class="map-label start">START</div><div class="map-label finish">FINISH</div><div class="map-start"></div><div class="map-finish"></div><div class="map-road"><div class="map-car" id="map-me" style="left:3%"></div><div class="map-car ai" id="map-ai" style="left:3%"></div></div></div>'+
+    '<div class="race-map"><div class="speed-effects" id="speed-effects"></div><div class="map-label start">START</div><div class="map-label finish">FINISH</div><div class="map-start"></div><div class="map-finish"></div><div class="map-road"><div class="map-car" id="map-me" style="left:3%"></div><div class="map-car ai" id="map-ai" style="left:3%"></div></div></div>'+
     '<div class="race-event-badge"><span id="race-status">ГАЗ ДЛЯ РАЗГОНА · ПЕРЕКЛЮЧАЙ В ЗОНЕ</span><b id="race-route">'+c.route+'</b></div>'+
-    '<div class="cockpit3"><div class="tacho3"><div style="font-size:8px;color:var(--text-muted);font-weight:900;">TACHOMETER</div><div class="gear3" id="race-gear">1</div><div class="tacho-num3" id="race-rpm">2200</div><div class="tacho-bar3"><i id="rpm-fill"></i></div></div><div class="speed3"><span>SPEED</span><strong id="race-speed">0</strong><span>KM/H</span></div></div>'+
-    '<div class="race-controls"><button class="race-control brake" id="brake-btn" onpointerdown="raceHold(\'brake\',true)" onpointerup="raceHold(\'brake\',false)" onpointercancel="raceHold(\'brake\',false)">ТОРМОЗ<small>сброс оборотов</small></button><button class="race-control gas" id="gas-btn" onpointerdown="raceHold(\'gas\',true)" onpointerup="raceHold(\'gas\',false)" onpointercancel="raceHold(\'gas\',false)">ГАЗ<small>держи для тяги</small></button><button class="race-control shift" onclick="manualShift()">ПЕРЕДАЧА ↑<small>переключить</small></button></div>'+
+    '<div class="cockpit3"><div class="analog-gauge tacho3"><div class="gauge-caption">RPM ×1000</div><div class="dial"><div class="dial-ticks"></div><div class="dial-needle" id="rpm-needle"></div><div class="dial-hub"></div><div class="gear3" id="race-gear">1</div><div class="gauge-center"><b id="race-rpm">2.2</b><span>×1000</span></div></div><div class="gauge-scale"><span>0</span><span>4</span><span>8</span></div></div><div class="analog-gauge speed3"><div class="gauge-caption">SPEED</div><div class="dial speed-dial"><div class="dial-ticks"></div><div class="dial-needle speed-needle" id="speed-needle"></div><div class="dial-hub"></div><div class="gauge-center"><b id="race-speed">0</b><span>KM/H</span></div></div><div class="gauge-scale"><span>0</span><span>'+c.maxSpeed+'</span></div></div></div>'+
+    '<div class="race-controls"><button class="race-control pedal brake" id="brake-btn" onpointerdown="raceHold(\'brake\',true)" onpointerup="raceHold(\'brake\',false)" onpointercancel="raceHold(\'brake\',false)" onpointerleave="raceHold(\'brake\',false)"><span class="pedal-face">BRAKE</span><small>ТОРМОЗ</small></button><button class="race-control pedal gas" id="gas-btn" onpointerdown="raceHold(\'gas\',true)" onpointerup="raceHold(\'gas\',false)" onpointercancel="raceHold(\'gas\',false)" onpointerleave="raceHold(\'gas\',false)"><span class="pedal-face">GAS</span><small>ГАЗ</small></button><button class="race-control shift" id="shift-btn" onclick="manualShift()"><span class="shift-face">↑</span><small id="shift-label">SHIFT · 1→2</small></button></div>'+
     '<div class="shift-mini" id="shift-help">1-я передача · красная зона начинается с 85%</div></div>';
   c.gas=false;c.brake=false;c.lastTs=performance.now();c.aiDistance=Math.max(0,c.distance-2);
   c.loop=setInterval(raceTick,50);
@@ -95,57 +95,128 @@ function raceHold(type,on){
 }
 function manualShift(){
   const c=raceCtx;if(!c||c.finished)return;
+  /* 6-я — физический предел. Никаких 7/8/9 передач. */
+  if(c.gear>=6){
+    c.gear=6;
+    c.shiftLock=true;
+    const status=document.getElementById('race-status');
+    if(status)status.innerText='6-Я ПЕРЕДАЧА · МАКСИМУМ';
+    updateRaceHUD();
+    return;
+  }
   const p=c.rpm/c.redline;
   c.shiftCount++;
-  if(p>=.72&&p<=.9){
-    c.goodShifts++;c.perfectShifts+=p>=.82&&p<=.89?1:0;c.rpm*=.56;c.speed+=4+c.gear*1.4;
+  if(p>=.70&&p<=.92){
+    c.goodShifts++; if(p>=.82&&p<=.89)c.perfectShifts++;
+    c.rpm=Math.max(2600,c.rpm*.60);
     c.gear=Math.min(6,c.gear+1);
-    document.getElementById('race-status').innerText=c.perfectShifts>0&&p>=.82?'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ':'ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ';
-  }else if(p>.9){
-    c.errors++;c.rpm*=.42;c.speed=Math.max(0,c.speed-3);c.gear=Math.min(6,c.gear+1);
-    document.getElementById('race-status').innerText='ПОЗДНО · ПРОВАЛ ТЯГИ';c.errors++;
+    c.shiftLock=false;
+    const status=document.getElementById('race-status');
+    if(status)status.innerText=(p>=.82&&p<=.89)?'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ':'ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ';
+    const root=document.getElementById('race-content'); if(root){root.classList.remove('shift-flash');void root.offsetWidth;root.classList.add('shift-flash');}
+  }else if(p>.92){
+    c.errors++;
+    c.rpm=Math.max(3000,c.rpm*.52);
+    c.gear=Math.min(6,c.gear+1);
+    const status=document.getElementById('race-status');
+    if(status)status.innerText='ПОЗДНО · ПРОВАЛ ТЯГИ';
   }else{
-    c.errors++;c.rpm=Math.min(c.redline,c.rpm*1.08);c.speed=Math.max(0,c.speed-1);
-    document.getElementById('race-status').innerText='РАНО · ПЕРЕКЛЮЧИЛСЯ В НАТЯГ';
+    c.errors++;
+    /* Ранний апшифт теперь не ускоряет машину, но не ломает физику. */
+    c.rpm=Math.max(1800,c.rpm*.72);
+    c.gear=Math.min(6,c.gear+1);
+    const status=document.getElementById('race-status');
+    if(status)status.innerText='РАНО · ПОТЕРЯ ТЯГИ';
   }
-  c.gear=Math.max(1,c.gear);updateRaceHUD();
+  updateRaceHUD();
 }
 function raceTick(){
   const c=raceCtx;if(!c||c.finished)return;
-  const dt=.05,p=c.profile;
-  const gearRatio=[0,.48,.68,.84,1,1.12,1.2][c.gear]||1;
-  if(c.gas){
-    const rpmGain=(920*p.rpmRate*gearRatio)*dt;
+  const now=performance.now();
+  const dt=Math.min(.075,Math.max(.016,(now-(c.lastTs||now))/1000));
+  c.lastTs=now;
+  const p=c.profile;
+  const gear=c.gear;
+  const ratios=[0,.40,.58,.73,.86,.96,1.00];
+  const ratio=ratios[gear]||.4;
+  const topSpeed=c.maxSpeed;
+  const rpmNorm=c.rpm/c.redline;
+
+  if(c.gas&&!c.brake){
+    /* В 6-й передаче газ до конца = удержание максимальной скорости,
+       а не падение скорости из-за искусственного redline-штрафа. */
+    const rpmGain=(1500*p.rpmRate*(.72+ratio*.45))*dt;
     c.rpm+=rpmGain;
-    if(c.rpm>c.redline){c.rpm=c.redline;c.speed=Math.max(0,c.speed-2.2);c.errors+=.02;}
-    const traction=(c.launchMode==='spin'&&c.distance<7?c.launchGrip:.96);
-    const band=Math.max(.15,Math.min(1,(c.rpm/ c.redline)));
-    c.speed += (5.4*p.accel*gearRatio*traction*(.45+band))*dt*3.2;
-  }else{
-    c.rpm-=520*dt;c.speed=Math.max(0,c.speed-1.8*dt*10);
+
+    if(gear===6){
+      c.rpm=Math.min(c.redline,c.rpm);
+      const topFactor=Math.min(1,Math.max(.35,c.rpm/c.redline));
+      const acceleration=(topSpeed-c.speed)*(.95*p.accel)*dt;
+      c.speed+=acceleration;
+      if(c.rpm>=c.redline*.96)c.speed=Math.min(topSpeed,c.speed+(topSpeed-c.speed)*.28);
+      if(c.speed>=topSpeed*.985)c.speed=topSpeed;
+    }else{
+      c.rpm=Math.min(c.redline,c.rpm);
+      const band=Math.max(.12,Math.min(1,c.rpm/c.redline));
+      const launchTraction=(c.launchMode==='spin'&&c.distance<8)?c.launchGrip:.98;
+      const accelForce=(topSpeed*.36)*p.accel*ratio*launchTraction*(.55+band*.75);
+      c.speed+=accelForce*dt;
+      /* До 6-й передачи redline означает пора переключаться, но не торможение. */
+      if(c.rpm>=c.redline*.985){
+        c.speed=Math.min(topSpeed,c.speed+topSpeed*.015*dt);
+      }
+    }
+  }else if(!c.gas){
+    c.rpm=Math.max(1100,c.rpm-900*dt);
+    c.speed=Math.max(0,c.speed-7*dt);
   }
-  if(c.brake){c.rpm=Math.max(1000,c.rpm-1800*dt);c.speed=Math.max(0,c.speed-8*dt);}
-  c.speed=Math.min(c.maxSpeed,c.speed);
-  const distanceGain=(c.speed/Math.max(c.maxSpeed,1))*1.65*dt;
+
+  if(c.brake){
+    c.rpm=Math.max(1100,c.rpm-2600*dt);
+    c.speed=Math.max(0,c.speed-55*dt);
+  }
+
+  c.speed=Math.max(0,Math.min(topSpeed,c.speed));
+
+  /* Быстрый drag: дистанция напрямую следует скорости, без ощущения улитки. */
+  const distanceGain=(c.speed/Math.max(topSpeed,1))*24.5*dt;
   c.distance=Math.min(100,c.distance+distanceGain);
-  const aiBase=.78+(c.opp.power/Math.max(getEffectivePower(carsDB.find(x=>x.id===state.activeCarId)),1))*.20;
-  const aiSkill=.88+Math.random()*.15;
-  c.aiSpeed=Math.min(c.maxSpeed*1.02,c.maxSpeed*aiBase*aiSkill);
-  c.aiDistance=Math.min(100,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*1.62*dt);
+
+  /* AI едет быстро и стабильно, но остаётся победимым хорошими переключениями. */
+  const myPower=getEffectivePower(carsDB.find(x=>x.id===state.activeCarId));
+  const powerRatio=Math.max(.72,Math.min(1.18,c.opp.power/Math.max(myPower,1)));
+  const aiPace=Math.max(.84,Math.min(1.035,.94+((powerRatio-1)*.18)));
+  c.aiSpeed=topSpeed*aiPace;
+  c.aiDistance=Math.min(100,c.aiDistance+(c.aiSpeed/Math.max(topSpeed,1))*24.5*dt);
+
   updateRaceHUD();
-  if(c.distance>=100||c.aiDistance>=100){finishRace(c.distance>=100,c);}
+
+  /* Победитель определяется именно первым пересечением финиша,
+     а не тем, какой флаг случайно оказался true в конце тика. */
+  if(c.distance>=100){ finishRace(true,c); return; }
+  if(c.aiDistance>=100){ finishRace(false,c); return; }
 }
 function updateRaceHUD(){
   const c=raceCtx;if(!c)return;
   const rpm=document.getElementById('race-rpm'),rf=document.getElementById('rpm-fill'),gear=document.getElementById('race-gear'),sp=document.getElementById('race-speed'),me=document.getElementById('map-me'),ai=document.getElementById('map-ai');
-  if(rpm)rpm.innerText=Math.round(c.rpm);
+  if(rpm){
+    const target=Math.round(c.rpm);
+    rpm.innerText=target.toLocaleString('fi-FI');
+  }
   if(rf)rf.style.width=Math.min(100,c.rpm/c.redline*100)+'%';
-  if(gear)gear.innerText=c.gear;
-  if(sp)sp.innerText=Math.round(c.speed);
+  const rpmNeedle=document.getElementById('rpm-needle');
+  if(rpmNeedle)rpmNeedle.style.transform='rotate('+(-132+(c.rpm/c.redline)*264)+'deg)';
+  const speedNeedle=document.getElementById('speed-needle');
+  if(speedNeedle)speedNeedle.style.transform='rotate('+(-132+(c.speed/Math.max(c.maxSpeed,1))*264)+'deg)';
+  const fx=document.getElementById('speed-effects'); if(fx)fx.classList.toggle('fast',c.speed>c.maxSpeed*.68);
+  if(gear)gear.innerText=c.gear>=6?'6':c.gear;
+  if(sp)sp.innerText=Math.round(c.speed).toLocaleString('fi-FI');
   if(me)me.style.left=Math.min(94,3+c.distance*.91)+'%';
   if(ai)ai.style.left=Math.min(94,3+c.aiDistance*.91)+'%';
   const help=document.getElementById('shift-help');
-  if(help)help.innerText='Передача '+c.gear+' · '+Math.round(c.rpm)+' RPM · '+(c.rpm/c.redline>=.82?'ПЕРЕКЛЮЧАЙ СЕЙЧАС':'набирай обороты');
+  if(help)help.innerText=c.gear>=6?'6-я передача · МАКСИМУМ · держи газ':('Передача '+c.gear+' · '+Math.round(c.rpm)+' RPM · '+(c.rpm/c.redline>=.82?'ПЕРЕКЛЮЧАЙ СЕЙЧАС':'набирай обороты'));
+  const sb=document.getElementById('shift-btn'); if(sb)sb.classList.toggle('locked',c.gear>=6);
+  const sl=document.getElementById('shift-label'); if(sl)sl.innerText=c.gear>=6?'6 · MAX':('SHIFT · '+c.gear+'→'+Math.min(6,c.gear+1));
 }
 function finishRace(playerWins,c){
   if(c.finished)return;c.finished=true;clearInterval(c.loop);
