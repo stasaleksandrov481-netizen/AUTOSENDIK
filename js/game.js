@@ -30,7 +30,7 @@ function addXP(n){
   state.xp+=n;
   let leveled=false;
   while(state.xp>=xpNeeded(state.level)){ state.xp-=xpNeeded(state.level); state.level++; leveled=true; }
-  if(leveled){ showToast("⭐ Новый уровень! Теперь LVL "+state.level); state.coins += state.level*50; }
+  if(leveled){ const bonus=state.level*50; awardMoney(bonus,'ПОВЫШЕНИЕ УРОВНЯ'); showToast("⭐ Новый уровень! Теперь LVL "+state.level); }
   updateHeader();
 }
 
@@ -260,27 +260,36 @@ function renderOpponents(){
   updateHeader();
   const container=document.getElementById('opponent-list');
   container.innerHTML='';
-  const car = carsDB.find(c=>c.id===state.activeCarId);
-  const myPower = car ? getEffectivePower(car) : 0;
-  const list = state.duelSub==='tour' ? tournamentsDB : opponentsDB;
+  const car=carsDB.find(c=>c.id===state.activeCarId);
   if(!car){ container.innerHTML='<div class="no-car-msg">Сначала выберите активную машину в гараже.</div>'; return; }
-  list.forEach(opp=>{
-    const unlocked = state.level>=opp.unlockLevel;
-    if(!unlocked){
-      container.innerHTML += '<div class="opp-card" style="opacity:.55;">'+
-        '<div class="opp-head"><span class="opp-name">🔒 ???</span><span class="opp-power">Требуется LVL '+opp.unlockLevel+'</span></div>'+
-        '<div class="locked-tag">Заблокировано</div></div>';
-      return;
-    }
-    const winChance = Math.max(5, Math.min(95, Math.round(50 + (myPower-opp.power)/opp.power*100)));
-    const fee = entryFeeFor(opp);
-    container.innerHTML += '<div class="opp-card '+(opp.boss?'boss':'')+'">'+
-      '<div class="opp-head"><span class="opp-name">'+(opp.boss?'👑 ':'')+opp.name+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
+  if(state.licenseSuspended){
+    container.innerHTML='<div class="sell-picker" style="border-color:#63333e;"><div style="font-size:18px;">🚫</div><b style="display:block;margin:6px 0;">Права временно изъяты</b><div class="empty-note" style="padding:0;text-align:left;">Но это не тупик. Можно заработать через подработку или получить перевод в банке.</div><div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" onclick="switchTab(\'jobs\')">ПОДРАБОТКА</button><button class="btn btn-ghost" onclick="switchTab(\'bank\')">БАНК</button></div></div>';
+    return;
+  }
+  const list=state.duelSub==='tour'?tournamentsDB:opponentsDB;
+  const myPower=getEffectivePower(car);
+  const history=state.raceHistory||[];
+  const available=list.filter(o=>state.level>=o.unlockLevel);
+  let pool=available.filter(o=>!history.slice(-3).includes(String(o.id)));
+  if(pool.length<3) pool=available;
+  pool=pool.slice().sort(()=>Math.random()-.5).slice(0,Math.min(5,available.length));
+  if(!pool.length){ container.innerHTML='<div class="empty-note">Пока нет доступных соперников.</div>'; return; }
+  const routeNames=['Промзона','Ночной проспект','Портовый обход','Тоннель','Старая эстакада'];
+  const route=routeNames[Math.floor(Math.random()*routeNames.length)];
+  container.innerHTML='<div class="race-event-badge"><span>СЕГОДНЯ НА ЛИНИИ</span><b>'+route+'</b></div>';
+  pool.forEach((opp,idx)=>{
+    const winChance=Math.max(5,Math.min(95,Math.round(50+(myPower-opp.power)/Math.max(opp.power,1)*100)));
+    const fee=entryFeeFor(opp);
+    const recent=history.includes(String(opp.id));
+    container.innerHTML += '<div class="opp-card '+(opp.boss?'boss ':'')+'roulette-choice" style="animation-delay:'+idx*70+'ms">'+
+      '<div class="opp-scan"></div>'+
+      '<div class="opp-head"><span class="opp-name">'+(opp.boss?'👑 ':'')+escapeHtml(opp.name)+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
       (opp.boss?'<div class="boss-badge" style="position:static;display:inline-block;width:fit-content;">БОСС</div>':'')+
-      '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;">'+opp.taunt+'</div>'+
+      '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;">'+escapeHtml(opp.taunt)+'</div>'+
       '<div class="odds-bar-bg"><div class="odds-win" style="width:'+winChance+'%"></div><div class="odds-lose" style="width:'+(100-winChance)+'%"></div></div>'+
-      '<div class="opp-foot"><span>Шанс победы: <b style="color:var(--green)">'+winChance+'%</b></span><span>Вход: <b>-'+fmt(fee)+'</b></span><span>Приз: <b>+'+fmt(opp.reward)+'</b></span></div>'+
-      '<button class="btn btn-select" onclick="prepareRace(\''+opp.id+'\', \''+(state.duelSub==='tour'?'tour':'normal')+'\')">К СТАРТУ</button>'+
+      '<div class="opp-foot"><span>Победа: <b style="color:var(--green)">'+winChance+'%</b></span><span>Вход: <b>-'+fmt(fee)+'</b></span><span>Приз: <b>+'+fmt(opp.reward)+'</b></span></div>'+
+      '<button class="btn btn-select" onclick="prepareRace(\''+String(opp.id).replace(/'/g,"\\'")+'\', \''+(state.duelSub==='tour'?'tour':'normal')+'\')">ВЫЕХАТЬ</button>'+
+      (recent?'<div style="font-size:9px;color:var(--text-muted);text-align:center;">Недавняя встреча</div>':'')+
     '</div>';
   });
 }
@@ -307,8 +316,7 @@ function doJob(jobId){
   const now=Date.now();
   const readyAt=state.jobCooldowns[jobId]||0;
   if(now<readyAt) return;
-  state.coins+=job.reward;
-  state.stats.totalEarned+=job.reward;
+  awardMoney(job.reward,job.name);
   addXP(job.xp||5);
   state.jobCooldowns[jobId]=now+job.cooldown*1000;
   showToast("💼 "+job.name+": +"+fmt(job.reward)+" 💰");
@@ -673,22 +681,28 @@ function openCase(caseId){
 
 /* ==================== LEADERBOARD ==================== */
 const LB_BOTS = [
-  {name:'Барон трассы Вадим', val:184000},{name:'Легенда подполья Дариан', val:142500},
-  {name:'Финалист «Полночь»', val:98700},{name:'Августина', val:61200},
-  {name:'Тень', val:45300},{name:'Толян с раёна', val:22100},
-  {name:'Ночной Гонщик Феникс', val:15400},{name:'Дворовый Стас', val:6200}
+  {name:'Барон трассы Вадим', val:184000,wins:248,races:301,car:'Nissan GT-R R34'},
+  {name:'Легенда подполья Дариан', val:142500,wins:211,races:268,car:'Lamborghini Aventador'},
+  {name:'Финалист «Полночь»', val:98700,wins:166,races:223,car:'McLaren 720S'},
+  {name:'Августина', val:61200,wins:121,races:190,car:'Audi RS6 Avant'},
+  {name:'Тень', val:45300,wins:98,races:151,car:'Nissan Silvia S15'},
+  {name:'Толян с раёна', val:22100,wins:57,races:110,car:'Volkswagen Golf Mk2'},
+  {name:'Ночной Гонщик Феникс', val:15400,wins:43,races:82,car:'Toyota Supra MK4'},
+  {name:'Дворовый Стас', val:6200,wins:21,races:55,car:"ВАЗ-2106 'Шестёрка'"}
 ];
 function renderLeaderboard(){
   const c=document.getElementById('lb-list');
-  const rows = LB_BOTS.map(b=>({name:b.name, val:b.val, me:false}));
-  rows.push({name: state.playerName+' (вы)', val: state.stats.totalEarned, me:true});
+  const rows=LB_BOTS.map((b,i)=>Object.assign({me:false},b,{val:b.val, wins:b.wins||0, races:b.races||0, car:b.car||'—'}));
+  rows.push({name:state.playerName+' (вы)',val:state.stats.totalEarned,wins:state.stats.wins,races:state.stats.races,car:(carsDB.find(c=>c.id===state.activeCarId)||{}).name||'—',me:true});
   rows.sort((a,b)=>b.val-a.val);
   c.innerHTML='';
   rows.forEach((r,i)=>{
-    const rankCls = i===0?'top1':i===1?'top2':i===2?'top3':'';
-    c.innerHTML += '<div class="lb-row '+(r.me?'me':'')+'"><div class="lb-rank '+rankCls+'">#'+(i+1)+'</div><div class="lb-name">'+r.name+'</div><div class="lb-val">'+fmt(r.val)+' 💰</div></div>';
+    const wr=r.races?Math.round(r.wins/r.races*100):0;
+    const rankCls=i===0?'top1':i===1?'top2':i===2?'top3':'';
+    c.innerHTML += '<div class="lb-row '+(r.me?'me':'')+'" onclick="openPublicProfile('+JSON.stringify(r.name).replace(/"/g,'&quot;')+','+r.val+','+r.wins+','+r.races+','+JSON.stringify(r.car).replace(/"/g,'&quot;')+')"><div class="lb-rank '+rankCls+'">#'+(i+1)+'</div><div class="lb-name">'+escapeHtml(r.name)+'<small style="display:block;color:var(--text-muted);font-size:8px;">'+wr+'% WR · '+escapeHtml(r.car)+'</small></div><div class="lb-val">'+fmt(r.val)+' <small>SYND</small></div></div>';
   });
 }
+
 
 /* ==================== SETTINGS ==================== */
 function renderSettings(){
@@ -738,7 +752,7 @@ function claimDaily(dayIndex){
   const hours = (now-state.lastDailyClaim)/3600000;
   const missedStreak = state.lastDailyClaim!==0 && hours>48;
   state.dailyStreak = missedStreak ? 1 : state.dailyStreak+1;
-  state.coins += DAILY_REWARDS[dayIndex];
+  awardMoney(DAILY_REWARDS[dayIndex],'ЕЖЕДНЕВНАЯ НАГРАДА');
   state.lastDailyClaim = now;
   showToast('📅 Награда дня: +'+fmt(DAILY_REWARDS[dayIndex])+' 💰');
   updateHeader(); closeDailyModal(); saveState(); checkAchievements();
@@ -779,3 +793,32 @@ function renderProfile(){
   }
 }
 
+
+/* ==================== ECONOMY / PUBLIC PROFILES 3.0 ==================== */
+function awardMoney(amount, reason){
+  amount=Math.max(0,Math.round(amount));
+  if(!amount) return;
+  state.coins+=amount; state.stats.totalEarned+=amount;
+  updateHeader();
+  const root=document.getElementById('money-modal-root');
+  if(root && state.settings.animations){
+    root.innerHTML='<div class="money-burst"><div class="money-burst-card"><div class="money-symbol">₳</div><div class="money-amount">+'+fmt(amount)+'</div><div class="money-label">SYNDICATE CREDIT · '+escapeHtml(reason||'НАГРАДА')+'</div></div></div>';
+    setTimeout(()=>{ if(root) root.innerHTML=''; },900);
+    for(let i=0;i<7;i++){
+      const el=document.createElement('div'); el.className='money-fly'; el.innerText='₳ '+fmt(Math.max(1,Math.round(amount/7)));
+      el.style.left=(40+Math.random()*20)+'%'; el.style.top=(42+Math.random()*10)+'%';
+      el.style.setProperty('--dx',(Math.random()*180-90)+'px'); el.style.setProperty('--dy',(-80-Math.random()*100)+'px');
+      document.body.appendChild(el); setTimeout(()=>el.remove(),1100);
+    }
+  }
+}
+function openPublicProfile(name,val,wins,races,car){
+  const root=document.getElementById('public-profile-root'); if(!root)return;
+  const wr=races?Math.round(wins/races*100):0;
+  root.innerHTML='<div class="modal-overlay" onclick="if(event.target===this)closePublicProfile()"><div class="public-profile">'+
+    '<div class="pp-head"><div class="public-avatar">'+escapeHtml((name||'Г').charAt(0).toUpperCase())+'</div><div><div style="font-size:18px;font-weight:1000;">'+escapeHtml(name)+'</div><div style="color:var(--text-muted);font-size:10px;font-weight:900;">УЧАСТНИК СИНДИКАТА</div></div></div>'+
+    '<div class="pp-grid"><div class="pp-stat"><span>Заработано</span><b>'+fmt(val)+' SYND</b></div><div class="pp-stat"><span>Победы</span><b>'+wins+'</b></div><div class="pp-stat"><span>Заезды</span><b>'+races+'</b></div><div class="pp-stat"><span>Win rate</span><b>'+wr+'%</b></div></div>'+
+    '<div class="pp-stat" style="margin-top:8px;"><span>Текущая машина</span><b>'+escapeHtml(car||'—')+'</b></div>'+
+    '<button class="btn btn-ghost" style="margin-top:12px;" onclick="closePublicProfile()">ЗАКРЫТЬ</button></div></div>';
+}
+function closePublicProfile(){const r=document.getElementById('public-profile-root');if(r)r.innerHTML='';}

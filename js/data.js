@@ -1,38 +1,41 @@
 /* ==================== CARS DB ==================== */
 const carsDB = [
-  { id:1, name:"ВАЗ-2106 'Шестёрка'", price:0, power:150, tier:"Street Tier 1", cat:"street", flavor:"Легенда дворов. Заводится не с первого раза, зато душа поёт, когда наконец завёлся." },
-  { id:2, name:"Volkswagen Golf Mk2", price:700, power:190, tier:"Street Tier 1", cat:"street", flavor:"Немецкая надёжность по цене б/у самоката. Идеально для первых заработков." },
-  { id:3, name:"Toyota AE86 Trueno", price:1400, power:260, tier:"Street Tier 2", cat:"jdm", flavor:"Панда на колёсах. Говорят, кто-то развозил на такой тофу по горным серпантинам." },
-  { id:4, name:"Nissan Silvia S15", price:2600, power:350, tier:"Tuner Tier 2", cat:"jdm", flavor:"Дрифт-икона. На светофорах косятся, на трассе — уважают." },
-  { id:5, name:"Mazda RX-7 FD", price:3200, power:390, tier:"Tuner Tier 2", cat:"jdm", flavor:"Роторный движок воет как турбина. Соседи не любят, зато завидуют." },
-  { id:6, name:"Toyota Supra MK4", price:4400, power:430, tier:"Tuner Tier 3", cat:"jdm", flavor:"2JZ можно крутить бесконечно. Легенда подполья, проверено временем." },
-  { id:7, name:"Mitsubishi Lancer Evo IX", price:4900, power:450, tier:"Tuner Tier 3", cat:"jdm", flavor:"Полный привод и характер бойца. На мокром асфальте не подведёт." },
-  { id:8, name:"Subaru Impreza WRX STI", price:5100, power:465, tier:"Tuner Tier 3", cat:"jdm", flavor:"Оппозитный рокот слышно за квартал. Раллийные гены не пропьёшь." },
-  { id:9, name:"Nissan Skyline GT-R R34", price:6800, power:500, tier:"Tuner Tier 3", cat:"jdm", flavor:"Godzilla. Просто Godzilla. На этом можно закончить описание." },
-  { id:10, name:"Ford Mustang GT", price:3400, power:440, tier:"Muscle Tier 3", cat:"muscle", flavor:"Американская классика. Жрёт бензин как не в себя, но звук V8 того стоит." },
-  { id:11, name:"Dodge Challenger SRT", price:5400, power:490, tier:"Muscle Tier 3", cat:"muscle", flavor:"Тяжёлый, злой, прямолинейный. На драге — король." },
-  { id:12, name:"Chevrolet Camaro SS", price:5700, power:505, tier:"Muscle Tier 3", cat:"muscle", flavor:"Низкий, широкий, агрессивный силуэт. Дизайнеры не сдерживались." },
-  { id:13, name:"BMW M4 Competition", price:7600, power:520, tier:"Sport Tier 4", cat:"sport", flavor:"Баварский хирургический инструмент. Точность в каждом повороте." },
-  { id:14, name:"Mercedes-AMG GT", price:8300, power:560, tier:"Sport Tier 4", cat:"sport", flavor:"Длинный капот, короткий характер. AMG не терпит компромиссов." },
-  { id:15, name:"Audi RS6 Avant", price:8700, power:575, tier:"Sport Tier 4", cat:"sport", flavor:"Универсал, который порвёт половину спорткаров. Quattro не обманывает." },
-  { id:16, name:"Porsche 911 Turbo S", price:13500, power:660, tier:"Supercar Tier 5", cat:"super", flavor:"Инженерное совершенство Штутгарта. Заезд — формальность, победа — данность." },
-  { id:17, name:"Porsche 911 GT3 RS", price:15800, power:700, tier:"Supercar Tier 5", cat:"super", flavor:"Трековый снаряд с номерами. Антикрыло не для красоты." },
-  { id:18, name:"Audi R8 V10", price:17200, power:730, tier:"Supercar Tier 5", cat:"super", flavor:"Атмосферная десятка ревёт так, что закладывает уши прохожим." },
-  { id:19, name:"Nissan GT-R R35", price:18900, power:750, tier:"Supercar Tier 5", cat:"super", flavor:"Компьютерный мозг и звериная тяга. Из коробки готов рвать полигон." },
-  { id:20, name:"McLaren 720S", price:24500, power:790, tier:"Supercar Tier 5", cat:"super", flavor:"Глаза-фары смотрят прямо в душу соперника ещё до старта." },
-  { id:21, name:"Ferrari 488 Pista", price:32000, power:860, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Red is the fastest colour, как говорят в Маранелло." },
-  { id:22, name:"Ferrari SF90 Stradale", price:38500, power:900, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Гибрид, который стыдно называть гибридом. Разгон рвёт шею." },
-  { id:23, name:"Lamborghini Huracan", price:42000, power:930, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Итальянский бык на асфальте. Соседи снимают на телефон каждый выезд." },
-  { id:24, name:"Lamborghini Aventador", price:52000, power:975, tier:"Legendary Boss", cat:"legend", flavor:"Ножничные двери — билет в клуб избранных подполья." },
-  { id:25, name:"Bugatti Chiron", price:78000, power:1200, tier:"Legendary Boss", cat:"legend", flavor:"Не машина — произведение искусства с мотором W16. Топ пищевой цепи." },
-  { id:26, name:"Комета Тьмы (миф)", price:95000, power:1350, tier:"Mythic ★★★", cat:"myth", flavor:"Говорят, объезжает светофоры сама и появляется только на полнолуние. Никто не видел документов на эту тачку." },
-  { id:27, name:"'Дед Толян' — ржавое чудо", price:9999, power:1050, tier:"Mythic ★★★", cat:"myth", flavor:"Снаружи ведро с гайками, внутри — движок неизвестного происхождения. Механики отказываются его обслуживать из уважения." }
+  { id:1, name:"ВАЗ-2106 'Шестёрка'", image:null, price:0, power:150, tier:"Street Tier 1", cat:"street", flavor:"Легенда дворов. Заводится не с первого раза, зато душа поёт, когда наконец завёлся." },
+  { id:2, name:"Volkswagen Golf Mk2", image:null, price:700, power:190, tier:"Street Tier 1", cat:"street", flavor:"Немецкая надёжность по цене б/у самоката. Идеально для первых заработков." },
+  { id:3, name:"Toyota AE86 Trueno", image:null, price:1400, power:260, tier:"Street Tier 2", cat:"jdm", flavor:"Панда на колёсах. Говорят, кто-то развозил на такой тофу по горным серпантинам." },
+  { id:4, name:"Nissan Silvia S15", image:null, price:2600, power:350, tier:"Tuner Tier 2", cat:"jdm", flavor:"Дрифт-икона. На светофорах косятся, на трассе — уважают." },
+  { id:5, name:"Mazda RX-7 FD", image:null, price:3200, power:390, tier:"Tuner Tier 2", cat:"jdm", flavor:"Роторный движок воет как турбина. Соседи не любят, зато завидуют." },
+  { id:6, name:"Toyota Supra MK4", image:null, price:4400, power:430, tier:"Tuner Tier 3", cat:"jdm", flavor:"2JZ можно крутить бесконечно. Легенда подполья, проверено временем." },
+  { id:7, name:"Mitsubishi Lancer Evo IX", image:null, price:4900, power:450, tier:"Tuner Tier 3", cat:"jdm", flavor:"Полный привод и характер бойца. На мокром асфальте не подведёт." },
+  { id:8, name:"Subaru Impreza WRX STI", image:null, price:5100, power:465, tier:"Tuner Tier 3", cat:"jdm", flavor:"Оппозитный рокот слышно за квартал. Раллийные гены не пропьёшь." },
+  { id:9, name:"Nissan Skyline GT-R R34", image:null, price:6800, power:500, tier:"Tuner Tier 3", cat:"jdm", flavor:"Godzilla. Просто Godzilla. На этом можно закончить описание." },
+  { id:10, name:"Ford Mustang GT", image:null, price:3400, power:440, tier:"Muscle Tier 3", cat:"muscle", flavor:"Американская классика. Жрёт бензин как не в себя, но звук V8 того стоит." },
+  { id:11, name:"Dodge Challenger SRT", image:null, price:5400, power:490, tier:"Muscle Tier 3", cat:"muscle", flavor:"Тяжёлый, злой, прямолинейный. На драге — король." },
+  { id:12, name:"Chevrolet Camaro SS", image:null, price:5700, power:505, tier:"Muscle Tier 3", cat:"muscle", flavor:"Низкий, широкий, агрессивный силуэт. Дизайнеры не сдерживались." },
+  { id:13, name:"BMW M4 Competition", image:null, price:7600, power:520, tier:"Sport Tier 4", cat:"sport", flavor:"Баварский хирургический инструмент. Точность в каждом повороте." },
+  { id:14, name:"Mercedes-AMG GT", image:null, price:8300, power:560, tier:"Sport Tier 4", cat:"sport", flavor:"Длинный капот, короткий характер. AMG не терпит компромиссов." },
+  { id:15, name:"Audi RS6 Avant", image:null, price:8700, power:575, tier:"Sport Tier 4", cat:"sport", flavor:"Универсал, который порвёт половину спорткаров. Quattro не обманывает." },
+  { id:16, name:"Porsche 911 Turbo S", image:null, price:13500, power:660, tier:"Supercar Tier 5", cat:"super", flavor:"Инженерное совершенство Штутгарта. Заезд — формальность, победа — данность." },
+  { id:17, name:"Porsche 911 GT3 RS", image:null, price:15800, power:700, tier:"Supercar Tier 5", cat:"super", flavor:"Трековый снаряд с номерами. Антикрыло не для красоты." },
+  { id:18, name:"Audi R8 V10", image:null, price:17200, power:730, tier:"Supercar Tier 5", cat:"super", flavor:"Атмосферная десятка ревёт так, что закладывает уши прохожим." },
+  { id:19, name:"Nissan GT-R R35", image:null, price:18900, power:750, tier:"Supercar Tier 5", cat:"super", flavor:"Компьютерный мозг и звериная тяга. Из коробки готов рвать полигон." },
+  { id:20, name:"McLaren 720S", image:null, price:24500, power:790, tier:"Supercar Tier 5", cat:"super", flavor:"Глаза-фары смотрят прямо в душу соперника ещё до старта." },
+  { id:21, name:"Ferrari 488 Pista", image:null, price:32000, power:860, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Red is the fastest colour, как говорят в Маранелло." },
+  { id:22, name:"Ferrari SF90 Stradale", image:null, price:38500, power:900, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Гибрид, который стыдно называть гибридом. Разгон рвёт шею." },
+  { id:23, name:"Lamborghini Huracan", image:null, price:42000, power:930, tier:"Hypercar Tier 6", cat:"hyper", flavor:"Итальянский бык на асфальте. Соседи снимают на телефон каждый выезд." },
+  { id:24, name:"Lamborghini Aventador", image:null, price:52000, power:975, tier:"Legendary Boss", cat:"legend", flavor:"Ножничные двери — билет в клуб избранных подполья." },
+  { id:25, name:"Bugatti Chiron", image:null, price:78000, power:1200, tier:"Legendary Boss", cat:"legend", flavor:"Не машина — произведение искусства с мотором W16. Топ пищевой цепи." },
+  { id:26, name:"Комета Тьмы (миф)", image:null, price:95000, power:1350, tier:"Mythic ★★★", cat:"myth", flavor:"Говорят, объезжает светофоры сама и появляется только на полнолуние. Никто не видел документов на эту тачку." },
+  { id:27, name:"'Дед Толян' — ржавое чудо", image:null, price:9999, power:1050, tier:"Mythic ★★★", cat:"myth", flavor:"Снаружи ведро с гайками, внутри — движок неизвестного происхождения. Механики отказываются его обслуживать из уважения." }
 ];
 const CAT_LABELS = { street:"Уличный", jdm:"JDM тюнер", muscle:"Масл-кар", sport:"Спорт", super:"Суперкар", hyper:"Гиперкар", legend:"Легенда", myth:"Миф подполья" };
 const CAT_COLORS = { street:['#94a3b8','#334155'], jdm:['#38bdf8','#0c4a6e'], muscle:['#fb923c','#7c2d12'], sport:['#a78bfa','#4c1d95'], super:['#fb7185','#4c0519'], hyper:['#fbbf24','#78350f'], legend:['#facc15','#713f12'], myth:['#c084fc','#1e1033'] };
 
 /* ==================== CAR ART (SVG, matches by category — no more mismatched photos) ==================== */
 function carArtSVG(car){
+  if(car.image){
+    return '<img class="car-real-image" src="'+String(car.image).replace(/"/g,'&quot;')+'" alt="'+String(car.name).replace(/"/g,'&quot;')+'" loading="lazy">';
+  }
   const col = CAT_COLORS[car.cat] || CAT_COLORS.street;
   const c1=col[0], c2=col[1];
   const shape = ['street','jdm','muscle'].includes(car.cat) ? 'classic' : (['sport','super'].includes(car.cat) ? 'coupe' : 'hyper');
@@ -81,15 +84,15 @@ function tuneStagePrice(car,stageIndex){ const base=Math.max(250,Math.round(car.
 
 /* ==================== OPPONENTS / TOURNAMENTS ==================== */
 const opponentsDB = [
-  { id:1, name:"Дворовый Стас на 'копейке'", power:220, reward:220, unlockLevel:1, taunt:"«Погнали, братан, я на этой тачке с музыкой из телефона!»" },
-  { id:2, name:"Толян с раёна на Golf'e", power:340, reward:380, unlockLevel:1, taunt:"«У меня чип стоит, между прочим!»" },
-  { id:3, name:"Августина на мамином Audi", power:480, reward:650, unlockLevel:2, taunt:"«Мама не узнает, погнали!»" },
-  { id:4, name:"Ночной Гонщик 'Феникс'", power:620, reward:1100, unlockLevel:4, taunt:"«Тут тебе не покатушки, тут дуэль.»" },
-  { id:5, name:"Барон трассы Вадим", power:780, reward:2000, unlockLevel:6, taunt:"«Многие пытались. Мало кто финишировал первым.»" },
-  { id:6, name:"Скрытная 'Тень'", power:950, reward:3600, unlockLevel:8, taunt:"«...» (она никогда не разговаривает)" },
-  { id:7, name:"Легенда подполья Дариан", power:1150, reward:6000, unlockLevel:11, taunt:"«Я жду соперника десять лет. Ты следующий проигравший.»", boss:true },
-  { id:8, name:"Финалист 'Полночь'", power:1350, reward:10000, unlockLevel:14, taunt:"«Никто не побеждал меня дважды. Некоторые — ни разу.»", boss:true },
-  { id:9, name:"Король подполья «Синдикат»", power:1550, reward:20000, unlockLevel:18, taunt:"«Ты хоть знаешь, кто здесь всем заправляет?»", boss:true }
+  { id:1, name:"Дворовый Стас на 'копейке'", image:null, power:220, reward:220, unlockLevel:1, taunt:"«Погнали, братан, я на этой тачке с музыкой из телефона!»" },
+  { id:2, name:"Толян с раёна на Golf'e", image:null, power:340, reward:380, unlockLevel:1, taunt:"«У меня чип стоит, между прочим!»" },
+  { id:3, name:"Августина на мамином Audi", image:null, power:480, reward:650, unlockLevel:2, taunt:"«Мама не узнает, погнали!»" },
+  { id:4, name:"Ночной Гонщик 'Феникс'", image:null, power:620, reward:1100, unlockLevel:4, taunt:"«Тут тебе не покатушки, тут дуэль.»" },
+  { id:5, name:"Барон трассы Вадим", image:null, power:780, reward:2000, unlockLevel:6, taunt:"«Многие пытались. Мало кто финишировал первым.»" },
+  { id:6, name:"Скрытная 'Тень'", image:null, power:950, reward:3600, unlockLevel:8, taunt:"«...» (она никогда не разговаривает)" },
+  { id:7, name:"Легенда подполья Дариан", image:null, power:1150, reward:6000, unlockLevel:11, taunt:"«Я жду соперника десять лет. Ты следующий проигравший.»", boss:true },
+  { id:8, name:"Финалист 'Полночь'", image:null, power:1350, reward:10000, unlockLevel:14, taunt:"«Никто не побеждал меня дважды. Некоторые — ни разу.»", boss:true },
+  { id:9, name:"Король подполья «Синдикат»", image:null, power:1550, reward:20000, unlockLevel:18, taunt:"«Ты хоть знаешь, кто здесь всем заправляет?»", boss:true }
 ];
 const tournamentsDB = [
   { id:'t1', name:"Ночной Кубок", power:500, reward:2500, entryFee:300, unlockLevel:3, taunt:"Ночной турнир для смелых новичков." },

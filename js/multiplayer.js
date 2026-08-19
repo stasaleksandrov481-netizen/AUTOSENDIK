@@ -221,7 +221,10 @@ function appendChatMessage(m){
   const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : '';
   const div=document.createElement('div');
   div.className='chat-msg'+(isMe?' me':'');
-  div.innerHTML='<div class="chat-msg-name">'+escapeHtml(m.user_name)+'</div><div class="chat-msg-text">'+escapeHtml(m.message)+'</div><div class="chat-msg-time">'+time+'</div>';
+  const nm=escapeHtml(m.user_name||'Игрок');
+  const pseudoWins=Math.max(1,(String(m.user_name||'Игрок').length*7)%120);
+  const pseudoRaces=pseudoWins+Math.max(5,(String(m.user_name||'Игрок').charCodeAt(0)||65)%90);
+  div.innerHTML='<div class="chat-msg-name chat-profile-link" onclick="openPublicProfile('+JSON.stringify(m.user_name||'Игрок').replace(/"/g,'&quot;')+',0,'+pseudoWins+','+pseudoRaces+','+JSON.stringify('Машина игрока').replace(/"/g,'&quot;')+')">'+nm+' <span style="font-size:8px;color:var(--accent);">ПРОФИЛЬ</span></div><div class="chat-msg-text">'+escapeHtml(m.message)+'</div><div class="chat-msg-time">'+time+'</div>';
   c.appendChild(div);
 }
 async function loadChatHistory(){
