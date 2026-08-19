@@ -680,26 +680,33 @@ function openCase(caseId){
 }
 
 /* ==================== LEADERBOARD ==================== */
-const LB_BOTS = [
-  {name:'Барон трассы Вадим', val:184000,wins:248,races:301,car:'Nissan GT-R R34'},
-  {name:'Легенда подполья Дариан', val:142500,wins:211,races:268,car:'Lamborghini Aventador'},
-  {name:'Финалист «Полночь»', val:98700,wins:166,races:223,car:'McLaren 720S'},
-  {name:'Августина', val:61200,wins:121,races:190,car:'Audi RS6 Avant'},
-  {name:'Тень', val:45300,wins:98,races:151,car:'Nissan Silvia S15'},
-  {name:'Толян с раёна', val:22100,wins:57,races:110,car:'Volkswagen Golf Mk2'},
-  {name:'Ночной Гонщик Феникс', val:15400,wins:43,races:82,car:'Toyota Supra MK4'},
-  {name:'Дворовый Стас', val:6200,wins:21,races:55,car:"ВАЗ-2106 'Шестёрка'"}
-];
-function renderLeaderboard(){
+/* ==================== LEADERBOARD — REAL PLAYERS ==================== */
+async function renderLeaderboard(){
   const c=document.getElementById('lb-list');
-  const rows=LB_BOTS.map((b,i)=>Object.assign({me:false},b,{val:b.val, wins:b.wins||0, races:b.races||0, car:b.car||'—'}));
-  rows.push({name:state.playerName+' (вы)',val:state.stats.totalEarned,wins:state.stats.wins,races:state.stats.races,car:(carsDB.find(c=>c.id===state.activeCarId)||{}).name||'—',me:true});
-  rows.sort((a,b)=>b.val-a.val);
+  if(!c)return;
+  c.innerHTML='<div class="empty-note">Загрузка игроков…</div>';
+  if(typeof syncPlayerProfile==='function') await syncPlayerProfile();
+  const rows=typeof loadPlayerLeaderboard==='function' ? await loadPlayerLeaderboard() : [];
+  if(!rows.length){
+    c.innerHTML='<div class="empty-note">Пока нет сохранённых профилей игроков. Запусти игру ещё раз после настройки таблицы Supabase.</div>';
+    return;
+  }
   c.innerHTML='';
   rows.forEach((r,i)=>{
-    const wr=r.races?Math.round(r.wins/r.races*100):0;
+    const races=Number(r.races)||0,wins=Number(r.wins)||0,wr=races?Math.round(wins/races*100):0;
+    const owned=Array.isArray(r.owned_cars)?r.owned_cars:[];
+    const carNames=owned.map(id=>carsDB.find(c=>String(c.id)===String(id))).filter(Boolean).map(c=>c.name);
+    const me=String(r.id)===String(state.playerId);
     const rankCls=i===0?'top1':i===1?'top2':i===2?'top3':'';
-    c.innerHTML += '<div class="lb-row '+(r.me?'me':'')+'" onclick="openPublicProfile('+JSON.stringify(r.name).replace(/"/g,'&quot;')+','+r.val+','+r.wins+','+r.races+','+JSON.stringify(r.car).replace(/"/g,'&quot;')+')"><div class="lb-rank '+rankCls+'">#'+(i+1)+'</div><div class="lb-name">'+escapeHtml(r.name)+'<small style="display:block;color:var(--text-muted);font-size:8px;">'+wr+'% WR · '+escapeHtml(r.car)+'</small></div><div class="lb-val">'+fmt(r.val)+' <small>SYND</small></div></div>';
+    const row=document.createElement('div');
+    row.className='lb-row '+(me?'me':'');
+    row.onclick=()=>openPublicProfileData(r);
+    row.innerHTML='<div class="lb-rank '+rankCls+'">#'+(i+1)+'</div>'+
+      '<div class="lb-name">'+escapeHtml(r.name||'Гонщик')+(me?' <small style="color:var(--green)">ВЫ</small>':'')+
+      '<small style="display:block;color:var(--text-muted);font-size:8px;">LVL '+(Number(r.level)||1)+' · '+wr+'% WR · '+carNames.length+' машин</small>'+
+      '<div class="player-lb-cars">'+(carNames.slice(0,4).map(x=>'<span class="player-lb-car">'+escapeHtml(x)+'</span>').join('')+(carNames.length>4?'<span class="player-lb-car">+'+(carNames.length-4)+'</span>':''))+'</div></div>'+
+      '<div class="lb-val">'+fmt(Number(r.balance)||0)+' <small>SYND</small></div>';
+    c.appendChild(row);
   });
 }
 
@@ -812,13 +819,23 @@ function awardMoney(amount, reason){
     }
   }
 }
-function openPublicProfile(name,val,wins,races,car){
+function openPublicProfile(name,val,wins,races,cars,profile){
   const root=document.getElementById('public-profile-root'); if(!root)return;
   const wr=races?Math.round(wins/races*100):0;
+  const list=Array.isArray(cars)?cars:[].concat(cars||[]).filter(Boolean);
+  const ownedHtml=list.length ? list.map(x=>'<span class="player-lb-car">'+escapeHtml(x)+'</span>').join('') : '<span style="color:var(--text-muted);font-size:10px;">Нет данных</span>';
+  const balance=profile ? Number(profile.balance)||0 : Number(val)||0;
+  const level=profile ? Number(profile.level)||1 : 1;
   root.innerHTML='<div class="modal-overlay" onclick="if(event.target===this)closePublicProfile()"><div class="public-profile">'+
-    '<div class="pp-head"><div class="public-avatar">'+escapeHtml((name||'Г').charAt(0).toUpperCase())+'</div><div><div style="font-size:18px;font-weight:1000;">'+escapeHtml(name)+'</div><div style="color:var(--text-muted);font-size:10px;font-weight:900;">УЧАСТНИК СИНДИКАТА</div></div></div>'+
-    '<div class="pp-grid"><div class="pp-stat"><span>Заработано</span><b>'+fmt(val)+' SYND</b></div><div class="pp-stat"><span>Победы</span><b>'+wins+'</b></div><div class="pp-stat"><span>Заезды</span><b>'+races+'</b></div><div class="pp-stat"><span>Win rate</span><b>'+wr+'%</b></div></div>'+
-    '<div class="pp-stat" style="margin-top:8px;"><span>Текущая машина</span><b>'+escapeHtml(car||'—')+'</b></div>'+
+    '<div class="pp-head"><div class="public-avatar">'+escapeHtml((name||'Г').charAt(0).toUpperCase())+'</div><div><div style="font-size:18px;font-weight:1000;">'+escapeHtml(name)+'</div><div style="color:var(--text-muted);font-size:10px;font-weight:900;">УРОВЕНЬ '+level+' · УЧАСТНИК СИНДИКАТА</div></div></div>'+
+    '<div class="pp-grid"><div class="pp-stat"><span>Баланс</span><b>'+fmt(balance)+' SYND</b></div><div class="pp-stat"><span>Заработано</span><b>'+fmt(val)+' SYND</b></div><div class="pp-stat"><span>Победы</span><b>'+wins+'</b></div><div class="pp-stat"><span>Заезды</span><b>'+races+'</b></div><div class="pp-stat"><span>Win rate</span><b>'+wr+'%</b></div></div>'+
+    '<div class="pp-stat" style="margin-top:8px;"><span>Машины игрока</span><div class="player-lb-cars" style="margin-top:8px;">'+ownedHtml+'</div></div>'+
     '<button class="btn btn-ghost" style="margin-top:12px;" onclick="closePublicProfile()">ЗАКРЫТЬ</button></div></div>';
 }
+function openPublicProfileData(p){
+  const owned=Array.isArray(p.owned_cars)?p.owned_cars:[];
+  const cars=owned.map(id=>carsDB.find(c=>String(c.id)===String(id))).filter(Boolean);
+  openPublicProfile(p.name,p.total_earned||0,p.wins||0,p.races||0,cars.map(c=>c.name),p);
+}
+
 function closePublicProfile(){const r=document.getElementById('public-profile-root');if(r)r.innerHTML='';}

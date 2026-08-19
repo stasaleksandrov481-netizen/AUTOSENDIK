@@ -49,9 +49,9 @@ function prepareRace(target,mode){
     opp,mode,fee,fuelCost,useNitro:false,profile,route,radarChance,
     radar:false,gas:false,brake:false,gear:1,rpm:1100,speed:0,distance:0,
     aiDistance:0,aiSpeed:0,aiGear:1,aiRpm:1200,aiShiftTimer:0,aiSkill:0,
-    finished:false,launchMode:null,shiftCount:0,goodShifts:0,perfectShifts:0,errors:0,
+    finished:false,launchMode:null,shiftCount:0,goodShifts:0,perfectShifts:0,errors:0,elapsed:0,actionTimer:0,actionText:'',
     lastTs:0,raf:null,launchIv:null,uiTimer:0,uiInterval:0,
-    maxSpeed,redline:8500
+    maxSpeed,redline:8500,startLocked:false,startTimer:0
   };
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-race').classList.add('active');
@@ -107,8 +107,9 @@ function chooseLaunch(mode){
   /* AI старт не идеальный по умолчанию. Его шанс зависит от силы машины. */
   const myPower=getEffectivePower(carsDB.find(x=>x.id===state.activeCarId));
   const powerRatio=Math.max(.78,Math.min(1.22,c.opp.power/Math.max(myPower,1)));
-  c.aiSkill=Math.max(.84,Math.min(1.13,.98+(powerRatio-1)*.16+(Math.random()-.5)*.16));
-  c.aiDistance=Math.max(0,c.distance-(Math.random()*.9));
+  c.aiSkill=Math.max(.92,Math.min(1.02,.97+(powerRatio-1)*.04+(Math.random()-.5)*.06));
+  c.aiDistance=Math.max(0,c.distance-(Math.random()*1.4));
+  c.aiStartDelay=0.85+Math.random()*0.55;
   c.aiSpeed=0;c.aiGear=1;c.aiRpm=2600+Math.random()*1700;
   showRaceCockpit();
 }
@@ -116,17 +117,44 @@ function showRaceCockpit(){
   const c=raceCtx,car=carsDB.find(x=>x.id===state.activeCarId),o=c.opp;
   document.getElementById('race-content').innerHTML=
   '<div class="race3"><div class="race3-top"><div class="race3-driver"><b>'+escapeHtml(car.name)+'</b><span>'+getEffectivePower(car)+' л.с.</span></div><div class="race3-vs">VS</div><div class="race3-driver" style="text-align:right;"><b>'+escapeHtml(o.name)+'</b><span>'+o.power+' л.с.</span></div></div>'+
+  '<div class="race-start-light" id="race-start-light"><div class="traffic-light"><i class="tl-red on"></i><i class="tl-yellow"></i><i class="tl-green"></i></div><b id="race-start-text">ГОТОВЬСЯ</b></div>'+
   '<div class="race-map"><div class="speed-effects" id="speed-effects"></div><div class="map-label start">START</div><div class="map-label finish">FINISH</div><div class="map-start"></div><div class="map-finish"></div><div class="map-road"><div class="map-car" id="map-me" style="left:3%"></div><div class="map-car ai" id="map-ai" style="left:3%"></div></div></div>'+
-  '<div class="race-event-badge"><span id="race-status">ГАЗ ДЛЯ РАЗГОНА · ЛОВИ ЗОНУ</span><b id="race-route">'+c.route+'</b></div>'+
+  '<div class="race-event-badge"><span id="race-status">ГАЗ ДЛЯ РАЗГОНА · ЛОВИ ЗОНУ</span><b id="race-route">'+c.route+'</b></div>'+'<div class="race-action" id="race-action"></div>'+
+
   '<div class="cockpit3"><div class="analog-gauge tacho3"><div class="gauge-caption">RPM ×1000</div><div class="dial zone-dial" id="rpm-dial"><div class="dial-ticks"></div><div class="dial-needle" id="rpm-needle"></div><div class="dial-hub"></div><div class="gear3" id="race-gear">1</div><div class="gauge-center"><b id="race-rpm">1.1</b><span>×1000</span></div></div><div class="gauge-scale"><span>0</span><span>4</span><span>8.5</span></div></div>'+
   '<div class="analog-gauge speed3"><div class="gauge-caption">SPEED</div><div class="dial speed-dial zone-dial" id="speed-dial"><div class="dial-ticks"></div><div class="dial-needle speed-needle" id="speed-needle"></div><div class="dial-hub"></div><div class="gauge-center"><b id="race-speed">0</b><span>KM/H</span></div></div><div class="gauge-scale"><span>0</span><span>'+c.maxSpeed+'</span></div></div></div>'+
   '<div class="race-controls"><button class="race-control pedal brake" id="brake-btn" onpointerdown="raceHold(\'brake\',true)" onpointerup="raceHold(\'brake\',false)" onpointercancel="raceHold(\'brake\',false)" onpointerleave="raceHold(\'brake\',false)"><span class="pedal-face">BRAKE</span><small>ТОРМОЗ</small></button><button class="race-control pedal gas" id="gas-btn" onpointerdown="raceHold(\'gas\',true)" onpointerup="raceHold(\'gas\',false)" onpointercancel="raceHold(\'gas\',false)" onpointerleave="raceHold(\'gas\',false)"><span class="pedal-face">GAS</span><small>ГАЗ</small></button><button class="race-control shift" id="shift-btn" onclick="manualShift()"><span class="shift-face">↑</span><small id="shift-label">SHIFT · 1→2</small></button></div>'+
   '<div class="shift-mini" id="shift-help">Жёлтая — хорошо · зелёная — идеально</div></div>';
-  c.gas=false;c.brake=false;c.lastTs=performance.now();c.uiTimer=0;
+  c.gas=false;c.brake=false;c.startLocked=true;c.startTimer=0;c.lastTs=performance.now();c.uiTimer=0;
   updateRaceZones();updateRaceHUD();
+  startTrafficLight();
   c.raf=requestAnimationFrame(raceFrame);
   if(state.settings.sound)showToast(c.launchMode==='spin'?'🔥 ШЛИФОВКА!':'🟢 Чистый старт');
 }
+function startTrafficLight(){
+  const c=raceCtx;if(!c)return;
+  const root=document.getElementById('race-start-light');
+  const red=root&&root.querySelector('.tl-red'),yellow=root&&root.querySelector('.tl-yellow'),green=root&&root.querySelector('.tl-green'),text=document.getElementById('race-start-text');
+  if(!root)return;
+  root.classList.add('show');
+  const steps=[
+    ()=>{ if(red)red.classList.add('on'); if(yellow)yellow.classList.remove('on'); if(green)green.classList.remove('on'); if(text)text.innerText='ГОТОВЬСЯ'; },
+    ()=>{ if(red)red.classList.add('on'); if(yellow)yellow.classList.add('on'); if(green)green.classList.remove('on'); if(text)text.innerText='НА СТАРТ'; },
+    ()=>{ if(red)red.classList.remove('on'); if(yellow)yellow.classList.remove('on'); if(green)green.classList.add('on'); if(text)text.innerText='ПОЕХАЛИ'; showAction('GREEN LIGHT · ПОЕХАЛИ!'); },
+    ()=>{ c.startLocked=false; c.startTimer=0; if(root)root.classList.remove('show'); }
+  ];
+  steps[0]();
+  setTimeout(steps[1],650);
+  setTimeout(steps[2],1250);
+  setTimeout(steps[3],1850);
+}
+function showAction(text){
+  const c=raceCtx;if(!c)return;
+  c.actionText=text;c.actionTimer=1.35;
+  const el=document.getElementById('race-action');
+  if(el){el.textContent='⚡ '+text;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');}
+}
+
 function raceHold(type,on){
   if(!raceCtx||raceCtx.finished)return;
   raceCtx[type]=on;
@@ -148,15 +176,15 @@ function manualShift(){
   const good=Math.abs(p-perfectCenter)<=y;
   c.gear=Math.min(6,c.gear+1);
   if(perfect){
-    c.perfectShifts++;c.goodShifts++;c.rpm=Math.max(3000,c.rpm*c.profile.shiftRecovery);
+    c.perfectShifts++;c.goodShifts++;showAction('ИДЕАЛЬНЫЙ SHIFT!');c.rpm=Math.max(3000,c.rpm*c.profile.shiftRecovery);
     showShiftText('ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ',true);
   }else if(good){
-    c.goodShifts++;c.rpm=Math.max(2700,c.rpm*c.profile.shiftRecovery*.94);
+    c.goodShifts++;showAction('ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ');c.rpm=Math.max(2700,c.rpm*c.profile.shiftRecovery*.94);
     showShiftText('ХОРОШЕЕ ПЕРЕКЛЮЧЕНИЕ',false);
   }else if(p>.92){
-    c.errors++;c.rpm=Math.max(3000,c.rpm*.54);showShiftText('ПОЗДНО · ПОТЕРЯ ТЯГИ',false);
+    c.errors++;showAction('ПОЗДНИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(3000,c.rpm*.54);showShiftText('ПОЗДНО · ПОТЕРЯ ТЯГИ',false);
   }else{
-    c.errors++;c.rpm=Math.max(2100,c.rpm*.68);showShiftText('РАНО · ПОТЕРЯ ТЯГИ',false);
+    c.errors++;showAction('РАННИЙ SHIFT · ПОТЕРЯ ТЯГИ');c.rpm=Math.max(2100,c.rpm*.68);showShiftText('РАНО · ПОТЕРЯ ТЯГИ',false);
   }
   updateRaceHUD();
 }
@@ -177,8 +205,12 @@ function raceFrame(now){
   if(!c.finished)c.raf=requestAnimationFrame(raceFrame);
 }
 function simulateRace(dt){
-  const c=raceCtx,p=c.profile,gear=c.gear;
-  const ratios=[0,.38,.55,.69,.81,.91,1];
+  const c=raceCtx;
+  if(c.startLocked) return;
+  c.elapsed+=dt;
+  if(c.actionTimer>0){ c.actionTimer-=dt; if(c.actionTimer<=0){ const a=document.getElementById('race-action'); if(a)a.classList.remove('show'); } }
+  const p=c.profile,gear=c.gear;
+  const ratios=[0,.58,.72,.82,.90,.96,1];
   const ratio=ratios[gear];
   const rpmNorm=c.rpm/c.redline;
   if(c.gas&&!c.brake){
@@ -188,7 +220,7 @@ function simulateRace(dt){
     const band=Math.max(.15,Math.min(1,rpmNorm));
     const launchTraction=(c.launchMode==='spin'&&c.distance<9)?c.launchGrip:.99;
     /* Сильный старт + быстрый набор скорости, без улиточного темпа. */
-    const baseAccel=(c.maxSpeed*.70)*p.accel*ratio*(.46+band*.72)*launchTraction;
+    const baseAccel=(c.maxSpeed*.92)*p.accel*ratio*(.52+band*.82)*launchTraction;
     const resistance=.020*c.speed*c.speed/c.maxSpeed;
     c.speed+=Math.max(0,baseAccel-resistance)*dt;
     if(gear===6){
@@ -206,18 +238,23 @@ function simulateRace(dt){
     c.speed=Math.max(0,c.speed-70*dt);
   }
   c.speed=Math.max(0,Math.min(c.maxSpeed,c.speed));
-  c.distance=Math.min(100,c.distance+(c.speed/Math.max(c.maxSpeed,1))*31*dt);
+  c.distance=Math.min(100,c.distance+(c.speed/Math.max(c.maxSpeed,1))*29*dt);
 
   /* AI: skill + power, без скрытого 95% преимущества. */
   const myPower=getEffectivePower(carsDB.find(x=>x.id===state.activeCarId));
   const ratioPower=Math.max(.72,Math.min(1.28,c.opp.power/Math.max(myPower,1)));
-  const aiTarget=c.maxSpeed*Math.max(.82,Math.min(1.08,(1/ratioPower)*.97))*c.aiSkill;
-  c.aiSpeed+=((aiTarget-c.aiSpeed)*2.2*dt);
-  c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*1.08,c.aiSpeed));
-  c.aiDistance=Math.min(100,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*31*dt);
+  // AI intentionally stays within a believable pace and cannot end the round
+  // while the player is still around the middle of the track.
+  const aiPace=Math.max(.70,Math.min(.82,.76+(myPower-c.opp.power)/Math.max(myPower,1)*.045));
+  const aiTarget=c.maxSpeed*aiPace*c.aiSkill;
+  c.aiSpeed+=((aiTarget-c.aiSpeed)*1.45*dt);
+  if(c.elapsed<c.aiStartDelay)c.aiSpeed*=Math.max(0,1-dt*5);
+  c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*.88,c.aiSpeed));
+  c.aiDistance=Math.min(99,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*29*dt);
 
   if(c.distance>=100){finishRace(true,c);return;}
-  if(c.aiDistance>=100){finishRace(false,c);return;}
+  // Never declare the AI winner before the player is close to the finish.
+  if(c.aiDistance>=98.5 && c.distance>=92){finishRace(false,c);return;}
 }
 function updateRaceZones(){
   const c=raceCtx;if(!c)return;

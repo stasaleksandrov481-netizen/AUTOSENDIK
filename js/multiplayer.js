@@ -11,8 +11,11 @@ function initSupabase(){
     if(window.supabase && window.supabase.createClient){
       sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       subscribeMarket();
+      syncPlayerProfile();
+      loadPlayerLeaderboard();
       pollBackgroundClaims();
       setInterval(pollBackgroundClaims, 90000);
+      setInterval(syncPlayerProfile, 30000);
     }
   }catch(e){ console.warn('supabase init failed', e); }
   return sb;
@@ -22,6 +25,55 @@ function pollBackgroundClaims(){
   claimSoldProceeds();
   claimBankTransfers();
   claimPvpResults();
+}
+
+
+/* ---------- РЕАЛЬНЫЕ ПРОФИЛИ ИГРОКОВ ---------- */
+function playerProfilePayload(){
+  return {
+    id: state.playerId,
+    name: state.playerName || 'Гонщик',
+    photo_url: state.playerPhoto || null,
+    level: Number(state.level)||1,
+    balance: Number(state.coins)||0,
+    xp: Number(state.xp)||0,
+    races: Number(state.stats?.races)||0,
+    wins: Number(state.stats?.wins)||0,
+    losses: Number(state.stats?.losses)||0,
+    total_earned: Number(state.stats?.totalEarned)||0,
+    owned_cars: Array.isArray(state.ownedCars)?state.ownedCars:[],
+    active_car_id: Number(state.activeCarId)||1,
+    last_seen: new Date().toISOString()
+  };
+}
+async function syncPlayerProfile(){
+  if(!sb || !state.playerId) return;
+  try{
+    const {error}=await sb.from('player_profiles').upsert(playerProfilePayload(),{onConflict:'id'});
+    if(error) console.warn('player profile sync:',error.message);
+  }catch(e){ console.warn('player profile sync failed',e); }
+}
+async function loadPlayerLeaderboard(){
+  if(!sb) return [];
+  try{
+    const {data,error}=await sb.from('player_profiles').select('id,name,photo_url,level,balance,xp,races,wins,losses,total_earned,owned_cars,active_car_id,last_seen').order('level',{ascending:false}).order('total_earned',{ascending:false}).limit(200);
+    if(error) throw error;
+    return data||[];
+  }catch(e){ console.warn('player leaderboard:',e.message); return []; }
+}
+async function openPublicProfileByName(name){
+  if(!sb){ openPublicProfile(name,0,0,0,[]); return; }
+  try{
+    const {data,error}=await sb.from('player_profiles').select('*').eq('name',name).order('last_seen',{ascending:false}).limit(1).maybeSingle();
+    if(error) throw error;
+    if(data) openPublicProfileData(data);
+    else openPublicProfile(name,0,0,0,[]);
+  }catch(e){ openPublicProfile(name,0,0,0,[]); }
+}
+function openPublicProfileData(p){
+  const owned=Array.isArray(p.owned_cars)?p.owned_cars:[];
+  const cars=owned.map(id=>carsDB.find(c=>String(c.id)===String(id))).filter(Boolean);
+  openPublicProfile(p.name,p.total_earned||0,p.wins||0,p.races||0,cars.map(c=>c.name),p);
 }
 
 /* ---------- РЫНОК ---------- */
@@ -224,7 +276,7 @@ function appendChatMessage(m){
   const nm=escapeHtml(m.user_name||'Игрок');
   const pseudoWins=Math.max(1,(String(m.user_name||'Игрок').length*7)%120);
   const pseudoRaces=pseudoWins+Math.max(5,(String(m.user_name||'Игрок').charCodeAt(0)||65)%90);
-  div.innerHTML='<div class="chat-msg-name chat-profile-link" onclick="openPublicProfile('+JSON.stringify(m.user_name||'Игрок').replace(/"/g,'&quot;')+',0,'+pseudoWins+','+pseudoRaces+','+JSON.stringify('Машина игрока').replace(/"/g,'&quot;')+')">'+nm+' <span style="font-size:8px;color:var(--accent);">ПРОФИЛЬ</span></div><div class="chat-msg-text">'+escapeHtml(m.message)+'</div><div class="chat-msg-time">'+time+'</div>';
+  div.innerHTML='<div class="chat-msg-name chat-profile-link" onclick="openPublicProfileByName('+JSON.stringify(m.user_name||'Игрок').replace(/"/g,'&quot;')+')">'+nm+' <span style="font-size:8px;color:var(--accent);">ПРОФИЛЬ</span></div><div class="chat-msg-text">'+escapeHtml(m.message)+'</div><div class="chat-msg-time">'+time+'</div>';
   c.appendChild(div);
 }
 async function loadChatHistory(){
