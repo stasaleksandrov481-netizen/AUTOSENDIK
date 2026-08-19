@@ -21,6 +21,7 @@ function initSupabase(){
   return sb;
 }
 function pollBackgroundClaims(){
+  if(document.getElementById('screen-race')?.classList.contains('active')) return;
   if(!sb) return;
   claimSoldProceeds();
   claimBankTransfers();
@@ -47,6 +48,7 @@ function playerProfilePayload(){
   };
 }
 async function syncPlayerProfile(){
+  if(document.getElementById('screen-race')?.classList.contains('active')) return;
   if(!sb || !state.playerId) return;
   try{
     const {error}=await sb.from('player_profiles').upsert(playerProfilePayload(),{onConflict:'id'});

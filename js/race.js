@@ -35,6 +35,16 @@ function prepareRace(target,mode){
     const list=mode==='tour'?tournamentsDB:opponentsDB;
     opp=list.find(o=>String(o.id)===String(target));
   }
+  if(mode==='tour' && opp){
+    const now=Date.now(), dayKey=new Date().toISOString().slice(0,10), key=String(opp.id);
+    const r=state.tournamentRuns[key]||{};
+    const count=r.day===dayKey?(Number(r.count)||0):0;
+    const next=r.day===dayKey?(Number(r.next)||0):0;
+    if(count>=3){showToast('🏁 Этот турнир уже сыгран 3 раза сегодня.');renderOpponents();return;}
+    if(next>now){showToast('⏳ Следующая попытка будет доступна через '+Math.ceil((next-now)/60000)+' мин.');renderOpponents();return;}
+    state.tournamentRuns[key]={day:dayKey,count:count+1,next:now+15*60*1000};
+    saveState();
+  }
   const car=carsDB.find(c=>c.id===state.activeCarId);
   if(!car||!opp)return;
   if(state.licenseSuspended){showToast('🚫 Права изъяты. Заработай через подработку или восстанови права.');switchTab('duel-select');return;}
@@ -250,11 +260,10 @@ function simulateRace(dt){
   c.aiSpeed+=((aiTarget-c.aiSpeed)*1.45*dt);
   if(c.elapsed<c.aiStartDelay)c.aiSpeed*=Math.max(0,1-dt*5);
   c.aiSpeed=Math.max(0,Math.min(c.maxSpeed*.88,c.aiSpeed));
-  c.aiDistance=Math.min(99,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*29*dt);
+  c.aiDistance=Math.min(100,c.aiDistance+(c.aiSpeed/Math.max(c.maxSpeed,1))*29*dt);
 
   if(c.distance>=100){finishRace(true,c);return;}
-  // Never declare the AI winner before the player is close to the finish.
-  if(c.aiDistance>=98.5 && c.distance>=92){finishRace(false,c);return;}
+  if(c.aiDistance>=100){finishRace(false,c);return;}
 }
 function updateRaceZones(){
   const c=raceCtx;if(!c)return;
@@ -284,8 +293,8 @@ function updateRaceHUD(){
   const fx=document.getElementById('speed-effects');if(fx)fx.classList.toggle('fast',c.speed>c.maxSpeed*.55);
   if(gear)gear.innerText=c.gear;
   if(sp)sp.innerText=Math.round(c.speed);
-  if(me)me.style.transform='translateX('+Math.min(91,c.distance*.91)+'%)';
-  if(ai)ai.style.transform='translateX('+Math.min(91,c.aiDistance*.91)+'%)';
+  if(me){me.style.left=(4+Math.min(100,c.distance)*.92)+'%';me.style.transform='translateX(-50%)';}
+  if(ai){ai.style.left=(4+Math.min(100,c.aiDistance)*.92)+'%';ai.style.transform='translateX(-50%)';}
   const help=document.getElementById('shift-help');
   if(help)help.innerText=c.gear>=6?'6-я передача · МАКСИМУМ · держи газ':'Передача '+c.gear+' · жёлтая — хорошо · зелёная — идеально';
   const sb=document.getElementById('shift-btn');if(sb)sb.classList.toggle('locked',c.gear>=6);
@@ -301,13 +310,17 @@ function finishRace(playerWins,c){
   state.raceStats.perfectShifts=(state.raceStats.perfectShifts||0)+c.perfectShifts;
   const performance=Math.max(0,Math.min(1,(c.goodShifts*2+c.perfectShifts*2-c.errors)/(Math.max(3,c.shiftCount*2))));
   let reward=0,xp=0;
+  const tourRun = c.mode==='tour' ? (state.tournamentRuns[String(opp.id)]||{}) : null;
+  const todayKey = new Date().toISOString().slice(0,10);
+  const completedAttempt = c.mode==='tour' && tourRun && tourRun.day===todayKey ? Math.max(1,Number(tourRun.count)||1) : 1;
+  const tourRewardMult = c.mode==='tour' ? ([1,.72,.48][Math.min(2,completedAttempt-1)]||.48) : 1;
   if(playerWins){
     state.stats.wins++;state.winStreak=(state.winStreak||0)+1;
     const streak=Math.min(.25,state.winStreak*.05);
-    reward=Math.round((opp.reward*(1+.08*performance))*(1+streak));
-    if(c.perfectShifts>=2)reward+=Math.round(opp.reward*.12);
+    reward=Math.round((opp.reward*tourRewardMult*(1+.08*performance))*(1+streak));
+    if(c.perfectShifts>=2)reward+=Math.round(opp.reward*tourRewardMult*.12);
     xp=(opp.boss||c.mode==='tour')?40:16;
-    if(c.launchMode==='spin'&&c.goodShifts>=2)reward+=Math.round(opp.reward*.05);
+    if(c.launchMode==='spin'&&c.goodShifts>=2)reward+=Math.round(opp.reward*tourRewardMult*.05);
     if(opp.pvp)resolvePvpChallenge(opp.row,true,reward);
   }else{
     state.stats.losses++;state.winStreak=0;reward=Math.round(opp.reward*.04)+15;xp=4;

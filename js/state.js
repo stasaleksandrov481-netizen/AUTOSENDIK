@@ -30,6 +30,7 @@ function defaultState(){
     licenseSuspendCount: 0,
     winStreak: 0,
     raceHistory: [],
+    tournamentRuns: {},
     raceStats: {perfectStarts:0, perfectShifts:0, hardLaunches:0, safeLaunches:0, radarEvents:0, policeStops:0},
     detailTargetId: null,
     tuneTargetId: null,
@@ -68,6 +69,7 @@ function loadState(){
     state.claimedPvpIds = Array.isArray(saved.claimedPvpIds) ? saved.claimedPvpIds : [];
     state.bankSentLog = Array.isArray(saved.bankSentLog) ? saved.bankSentLog : [];
     state.raceHistory = Array.isArray(saved.raceHistory) ? saved.raceHistory : [];
+    state.tournamentRuns = saved.tournamentRuns && typeof saved.tournamentRuns === 'object' ? saved.tournamentRuns : {};
     state.raceStats = Object.assign(base.raceStats, saved.raceStats||{});
     if(!Array.isArray(state.ownedCars) || state.ownedCars.length===0) state.ownedCars=[1];
   }catch(e){ console.warn('load failed, using defaults', e); state = defaultState(); }
@@ -110,7 +112,7 @@ function resetProgress(){
   switchTab('garage');
 }
 window.addEventListener('beforeunload', saveState);
-setInterval(saveState, 20000);
+setInterval(()=>{ const racing=document.getElementById('screen-race')?.classList.contains('active'); if(!racing) saveState(); }, 20000);
 
 /* ==================== TELEGRAM SYNC ==================== */
 function initTelegram(){

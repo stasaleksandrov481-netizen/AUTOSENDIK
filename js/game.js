@@ -270,9 +270,33 @@ function renderOpponents(){
   const myPower=getEffectivePower(car);
   const history=state.raceHistory||[];
   const available=list.filter(o=>state.level>=o.unlockLevel);
+  if(state.duelSub==='tour'){
+    const now=Date.now();
+    const dayKey=new Date().toISOString().slice(0,10);
+    const statusText=(o)=>{
+      const r=state.tournamentRuns[String(o.id)]||{};
+      if(r.day!==dayKey) return {count:0,next:0,day:dayKey};
+      return {count:Number(r.count)||0,next:Number(r.next)||0,day:dayKey};
+    };
+    const locked=available.filter(o=>statusText(o).count>=3 || statusText(o).next>now);
+    if(available.length && locked.length===available.length){
+      const soon=Math.min(...locked.map(o=>Math.max(0,(statusText(o).next-now)/60000)).filter(x=>x>0));
+      container.innerHTML='<div class="empty-note">🏁 Все турнирные попытки на сегодня использованы.<br><span style="font-size:10px;">Новые попытки появятся завтра'+(Number.isFinite(soon)?' или после восстановления кулдауна.':'')+'</span></div>';
+      return;
+    }
+  }
   let pool=available.filter(o=>!history.slice(-3).includes(String(o.id)));
-  if(pool.length<3) pool=available;
-  pool=pool.slice().sort(()=>Math.random()-.5).slice(0,Math.min(5,available.length));
+  if(state.duelSub==='tour'){
+    const now=Date.now(), dayKey=new Date().toISOString().slice(0,10);
+    pool=available.filter(o=>{
+      const r=state.tournamentRuns[String(o.id)]||{};
+      const count=r.day===dayKey?(Number(r.count)||0):0;
+      const next=r.day===dayKey?(Number(r.next)||0):0;
+      return count<3 && next<=now;
+    });
+  }
+  if(pool.length<3 && state.duelSub!=='tour') pool=available;
+  pool=pool.slice().sort(()=>Math.random()-.5).slice(0,Math.min(5,pool.length));
   if(!pool.length){ container.innerHTML='<div class="empty-note">Пока нет доступных соперников.</div>'; return; }
   const routeNames=['Промзона','Ночной проспект','Портовый обход','Тоннель','Старая эстакада'];
   const route=routeNames[Math.floor(Math.random()*routeNames.length)];
@@ -281,14 +305,21 @@ function renderOpponents(){
     const winChance=Math.max(5,Math.min(95,Math.round(50+(myPower-opp.power)/Math.max(opp.power,1)*100)));
     const fee=entryFeeFor(opp);
     const recent=history.includes(String(opp.id));
+    const tourStatus=state.duelSub==='tour' ? (state.tournamentRuns[String(opp.id)]||{}) : null;
+    const dayKey=new Date().toISOString().slice(0,10);
+    const tourCount=state.duelSub==='tour' && tourStatus && tourStatus.day===dayKey ? (Number(tourStatus.count)||0) : 0;
+    const tourRewardMult=state.duelSub==='tour' ? ([1,.72,.48][Math.min(2,tourCount)]||.48) : 1;
+    const shownReward=Math.round(opp.reward*tourRewardMult);
+    const buttonDisabled=state.duelSub==='tour' && tourCount>=3;
     container.innerHTML += '<div class="opp-card '+(opp.boss?'boss ':'')+'roulette-choice" style="animation-delay:'+idx*70+'ms">'+
       '<div class="opp-scan"></div>'+
       '<div class="opp-head"><span class="opp-name">'+(opp.boss?'👑 ':'')+escapeHtml(opp.name)+'</span><span class="opp-power">'+opp.power+' л.с.</span></div>'+
       (opp.boss?'<div class="boss-badge" style="position:static;display:inline-block;width:fit-content;">БОСС</div>':'')+
       '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;">'+escapeHtml(opp.taunt)+'</div>'+
       '<div class="odds-bar-bg"><div class="odds-win" style="width:'+winChance+'%"></div><div class="odds-lose" style="width:'+(100-winChance)+'%"></div></div>'+
-      '<div class="opp-foot"><span>Победа: <b style="color:var(--green)">'+winChance+'%</b></span><span>Вход: <b>-'+fmt(fee)+'</b></span><span>Приз: <b>+'+fmt(opp.reward)+'</b></span></div>'+
-      '<button class="btn btn-select" onclick="prepareRace(\''+String(opp.id).replace(/'/g,"\\'")+'\', \''+(state.duelSub==='tour'?'tour':'normal')+'\')">ВЫЕХАТЬ</button>'+
+      '<div class="opp-foot"><span>Победа: <b style="color:var(--green)">'+winChance+'%</b></span><span>Вход: <b>-'+fmt(fee)+'</b></span><span>Приз: <b>+'+fmt(shownReward)+'</b></span></div>'+
+      (state.duelSub==='tour'?'<div style="font-size:10px;color:var(--gold);text-align:center;">Турнир: попытка '+(tourCount+1)+'/3 · выплата ×'+tourRewardMult.toFixed(2)+'</div>':'')+
+      '<button class="btn btn-select" '+(buttonDisabled?'disabled':'')+' onclick="prepareRace(\''+String(opp.id).replace(/'/g,"\\'")+'\', \''+(state.duelSub==='tour'?'tour':'normal')+'\')">ВЫЕХАТЬ</button>'+
       (recent?'<div style="font-size:9px;color:var(--text-muted);text-align:center;">Недавняя встреча</div>':'')+
     '</div>';
   });
