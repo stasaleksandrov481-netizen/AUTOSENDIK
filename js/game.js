@@ -511,7 +511,7 @@ function rltSpin(){
 }
 
 /* ==================== SLOTS ==================== */
-const SLOT_SYMBOLS = ['','','','⭐','','7⃣'];
+const SLOT_SYMBOLS = ['BOLT','DIAMOND','STAR','CROWN','BAR','777'];
 const SLOT_WEIGHTS = [30,26,20,13,8,3];
 function slotsAdjustBet(delta){ const i=document.getElementById('slots-bet-input'); i.value=(parseInt(i.value)||0)+delta; clampBet(i,10); }
 function slotsMaxBet(){ document.getElementById('slots-bet-input').value=state.coins; clampBet(document.getElementById('slots-bet-input'),10); }
@@ -521,7 +521,7 @@ function weightedSymbol(){
   for(let i=0;i<SLOT_SYMBOLS.length;i++){ if(r<SLOT_WEIGHTS[i]) return SLOT_SYMBOLS[i]; r-=SLOT_WEIGHTS[i]; }
   return SLOT_SYMBOLS[0];
 }
-const SLOT_PAYOUTS = {'':3,'':4,'':6,'⭐':10,'':20,'7⃣':50};
+const SLOT_PAYOUTS = {BOLT:3,DIAMOND:4,STAR:6,CROWN:10,BAR:20,'777':50};
 function slotsSpin(){
   if(slotsSpinning)return;
   const bet = clampBet(document.getElementById('slots-bet-input'),10);

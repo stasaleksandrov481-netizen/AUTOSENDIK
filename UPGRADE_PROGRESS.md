@@ -1,19 +1,30 @@
-# Carbon Expansion v8 — status
+# Carbon Expansion v9 — status
 
-Завершено в этой сборке:
+Реализовано:
 
-- динамика гонки, новые пределы скорости и усиленный AI;
-- launch-control, GOOD/PERFECT SHIFT и влияние уровня КПП;
-- расширенный пул и профили соперников, реплики до/после гонки;
-- новая case roulette, chances/history/pity и редкие автомобили;
-- коллекция и установка номеров, редкости и LIMITED серии;
-- full-vehicle market snapshot с тюнингом и номером;
-- новое меню тюнинга, сравнения, графики, build score и история;
-- серверная referral-связь, 5% ledger, стартовый и first-race бонус;
-- SVG-иконки вместо emoji в интерфейсных исходниках;
-- динамический preloader;
-- save v8 с резервными копиями;
-- market reconciliation и дополнительные guard-проверки Supabase;
-- статические и VM smoke-проверки проекта.
+- физические speed caps передач: 40 / 90 / 150 / 215 / 285 / 380 км/ч;
+- запрет старта на 2–6 передаче через engine stall;
+- RPM связан со скоростью внутри диапазона передачи;
+- жёлтый GOOD и зелёный PERFECT сектор тахометра;
+- ощутимый тяговый импульс PERFECT SHIFT;
+- прогрессивная тяга и limiter behavior на каждой передаче;
+- AI с собственными передачами и shift pauses;
+- старт с фактических 0 км/ч;
+- более короткий и динамичный race distance;
+- Canvas speed FX в общем RAF-loop;
+- 20 Hz DOM HUD + адаптивное снижение Canvas quality;
+- визуальный gap meter, time gap и overtake pulse;
+- лучший 0–100 в статистике;
+- server-synchronized case roll ID/prize;
+- точное центрирование final case item по DOM geometry;
+- recovery незавершённых case rolls;
+- SVG слот-машина без emoji/белого text overlay;
+- расширенные player profiles;
+- друзья по ID/@Telegram login;
+- friend requests и accepted friendship;
+- кланы, invite друзей, roster management;
+- global/division clan leaderboard;
+- дивизионы от «Мантика» до «Легенда»;
+- `supabase/schema_v9.sql`.
 
-Ограничение: полностью сервер-авторитетная экономика не внедрялась, потому что существующая игра изначально хранит основной кошелёк и инвентарь в `localStorage`. Подробности — `SECURITY.md`.
+Архитектурное ограничение остаётся прежним: основной wallet/inventory игры не полностью server-authoritative. См. `SECURITY.md`.
